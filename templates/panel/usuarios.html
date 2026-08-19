@@ -1,0 +1,86 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Usuarios | Panel Grandiet{% endblock %}
+{% block panel_content %}
+<div class="toolbar">
+  <h2>Usuarios ({{ usuarios|length }})</h2>
+</div>
+
+<div class="split-layout">
+  <div class="split-list">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Sucursales</th><th>Estado</th><th>Acciones</th><th>Activo</th></tr>
+        </thead>
+        <tbody>
+          {% for usuario in usuarios %}
+          <tr>
+            <td><strong>{{ usuario.username }}</strong></td>
+            <td>{{ usuario.get_full_name|default:"—" }}</td>
+            <td>{{ usuario.email|default:"—" }}</td>
+            <td>
+              {% with sucursales=usuario.sucursales_autorizadas.all %}
+                {% for s in sucursales %}{{ s.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}<em>Sin sucursal asignada</em>{% endfor %}
+              {% endwith %}
+            </td>
+            <td>
+              {% if usuario.is_active %}<span class="badge badge-best">activo</span>{% else %}<span class="badge badge-off">inactivo</span>{% endif %}
+            </td>
+            <td class="td-actions">
+              <div class="td-actions-inner">
+                <a class="btn btn-secondary btn-sm" href="{% url 'panel:usuario_editar' usuario.pk %}">Editar</a>
+                <a class="btn btn-secondary btn-sm" href="{% url 'panel:usuario_password' usuario.pk %}">Contraseña</a>
+              </div>
+            </td>
+            <td class="td-activo">
+              <form method="post" action="{% url 'panel:usuario_toggle_activo' usuario.pk %}" class="activo-form">
+                {% csrf_token %}
+                <input
+                  type="checkbox"
+                  name="activo"
+                  onchange="this.form.submit()"
+                  {% if usuario.is_active %}checked{% endif %}
+                  title="Usuario activo (puede iniciar sesión)"
+                  aria-label="Activar o desactivar {{ usuario.username }}">
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="empty-row"><td colspan="7">No hay usuarios normales todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="split-form">
+    <div class="panel-card">
+      <h2>Nuevo usuario</h2>
+      <form method="post" action="{% url 'panel:usuario_crear' %}" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+          {% if field.name == "sucursales" %}
+            <div class="field usuarios-checklist">
+              <label>{{ field.label }}</label>
+              {{ field }}
+            </div>
+          {% elif field.name == "is_active" %}
+            <label class="tag-check">{{ field }} Activo</label>
+          {% else %}
+            <div class="field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+              {{ field }}
+              {{ field.errors }}
+              {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Crear usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

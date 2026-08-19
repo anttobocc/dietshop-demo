@@ -40,6 +40,7 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
 .usuarios-checklist ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
 .usuarios-checklist li label { display: flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 400; cursor: pointer; }
 .usuarios-checklist input[type="checkbox"] { width: 15px; height: 15px; accent-color: #8DB33E; }
+.usuario-password-link { margin-top: 1rem; }
 
 /* Header del panel */
 .panel-header {

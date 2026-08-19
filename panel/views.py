@@ -1,5 +1,7 @@
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import SetPasswordForm
 from django.contrib.auth.views import LoginView, LogoutView
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,7 +12,9 @@ from productos.models import Categoria, InventarioSucursal
 from sucursales.models import Sucursal
 from sucursales.permisos import get_sucursal_activa, set_sucursal_activa, sucursales_permitidas
 
-from .forms import CategoriaForm, InventarioForm, ProductoGlobalForm, SucursalForm
+from .forms import CategoriaForm, InventarioForm, ProductoGlobalForm, SucursalForm, UsuarioCrearForm, UsuarioEditarForm
+
+User = get_user_model()
 
 
 class PanelLoginView(LoginView):
@@ -264,3 +268,70 @@ def sucursal_toggle_activo(request, pk):
     estado = "activada" if sucursal.activo else "desactivada"
     messages.success(request, f'"{sucursal.nombre}" fue {estado}.')
     return redirect("panel:sucursales")
+
+
+@login_required
+def usuarios_lista(request):
+    _exigir_superusuario(request)
+    lista = User.objects.filter(is_superuser=False).prefetch_related("sucursales_autorizadas").order_by("username")
+    return render(request, "panel/usuarios.html", {"usuarios": lista, "form": UsuarioCrearForm()})
+
+
+@login_required
+def usuario_crear(request):
+    _exigir_superusuario(request)
+    if request.method == "POST":
+        form = UsuarioCrearForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario creado correctamente.")
+            return redirect("panel:usuarios")
+    else:
+        form = UsuarioCrearForm()
+    lista = User.objects.filter(is_superuser=False).prefetch_related("sucursales_autorizadas").order_by("username")
+    return render(request, "panel/usuarios.html", {"usuarios": lista, "form": form})
+
+
+@login_required
+def usuario_editar(request, pk):
+    _exigir_superusuario(request)
+    # Seguridad: excluye superusuarios explícitamente. Un id de superusuario
+    # da 404 -- esta pantalla nunca puede tocar una cuenta de administrador.
+    usuario = get_object_or_404(User, pk=pk, is_superuser=False)
+    if request.method == "POST":
+        form = UsuarioEditarForm(request.POST, instance=usuario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Usuario actualizado correctamente.")
+            return redirect("panel:usuarios")
+    else:
+        form = UsuarioEditarForm(instance=usuario)
+    return render(request, "panel/usuario_form.html", {"form": form, "usuario": usuario})
+
+
+@login_required
+def usuario_password(request, pk):
+    _exigir_superusuario(request)
+    usuario = get_object_or_404(User, pk=pk, is_superuser=False)
+    if request.method == "POST":
+        form = SetPasswordForm(usuario, request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Contraseña de "{usuario.username}" actualizada correctamente.')
+            return redirect("panel:usuarios")
+    else:
+        form = SetPasswordForm(usuario)
+    return render(request, "panel/usuario_password.html", {"form": form, "usuario": usuario})
+
+
+@login_required
+@require_POST
+def usuario_toggle_activo(request, pk):
+    """Activa/desactiva el usuario (is_active). No lo elimina."""
+    _exigir_superusuario(request)
+    usuario = get_object_or_404(User, pk=pk, is_superuser=False)
+    usuario.is_active = request.POST.get("activo") == "on"
+    usuario.save(update_fields=["is_active"])
+    estado = "activado" if usuario.is_active else "desactivado"
+    messages.success(request, f'"{usuario.username}" fue {estado}.')
+    return redirect("panel:usuarios")

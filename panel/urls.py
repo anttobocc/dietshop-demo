@@ -19,4 +19,9 @@ urlpatterns = [
     path('sucursales/nueva/', views.sucursal_crear, name='sucursal_crear'),
     path('sucursales/<int:pk>/editar/', views.sucursal_editar, name='sucursal_editar'),
     path('sucursales/<int:pk>/activo/', views.sucursal_toggle_activo, name='sucursal_toggle_activo'),
+    path('usuarios/', views.usuarios_lista, name='usuarios'),
+    path('usuarios/nuevo/', views.usuario_crear, name='usuario_crear'),
+    path('usuarios/<int:pk>/editar/', views.usuario_editar, name='usuario_editar'),
+    path('usuarios/<int:pk>/password/', views.usuario_password, name='usuario_password'),
+    path('usuarios/<int:pk>/activo/', views.usuario_toggle_activo, name='usuario_toggle_activo'),
 ]
