@@ -3,15 +3,10 @@ from django.db import models
 
 
 class Categoria(models.Model):
-    # Nullable temporalmente durante la migración incremental a sucursales;
-    # se vuelve obligatorio (null=False) en una etapa posterior, una vez
-    # que las 7 categorías existentes ya tengan sucursal asignada.
     sucursal = models.ForeignKey(
         "sucursales.Sucursal",
         on_delete=models.PROTECT,
         related_name="categorias",
-        null=True,
-        blank=True,
     )
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
