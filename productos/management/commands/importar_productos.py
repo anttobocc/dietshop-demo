@@ -1,9 +1,20 @@
 """
 Importa a la base de datos Django las 7 categorías y los 28 productos
-que hoy están hardcodeados en script.js (arrays `categories` y `products`).
+que originalmente estaban hardcodeados en script.js.
 
-Es seguro ejecutarlo varias veces: usa update_or_create por nombre,
-así que no genera duplicados.
+Arquitectura actual (post-sucursales): el producto es global (Producto) y
+su categoría/stock/disponibilidad son propios de una sucursal
+(InventarioSucursal). Este comando importa siempre a "Sucursal Central",
+que es la sucursal donde vivían estos datos desde el origen del proyecto.
+
+Es seguro ejecutarlo varias veces:
+- Categoria y Producto usan update_or_create por (sucursal, nombre) / nombre,
+  así que sus datos de catálogo (descripción, precio, imagen, tags, etc.) se
+  vuelven a sincronizar con esta lista en cada corrida, sin duplicar filas.
+- InventarioSucursal usa get_or_create: el stock y la disponibilidad
+  SOLO se inicializan la primera vez. Si ya existe, no se pisan valores que
+  un administrador haya cargado desde el panel (igual que el comportamiento
+  original, que nunca reescribía el stock en corridas posteriores).
 """
 import shutil
 from pathlib import Path
@@ -11,7 +22,8 @@ from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
-from productos.models import Categoria, Producto
+from productos.models import Categoria, InventarioSucursal, Producto
+from sucursales.models import Sucursal
 
 # Igual a `categories` en script.js (solo se usan nombre y descripción,
 # que son los campos que existen en el modelo Categoria).
@@ -28,7 +40,8 @@ CATEGORIAS = [
 # Igual a `products` en script.js. `imagen` es el nombre de archivo tal cual
 # aparece en assets/ (sin el prefijo "assets/"). `tags` reproduce el array
 # `tags` original; "offer" se agrega también cuando el producto tiene
-# `oldPrice`, tal como hace badgeMarkup() en script.js.
+# `oldPrice`, tal como hace badgeMarkup() en script.js. `categoria` indica
+# a qué InventarioSucursal (en Sucursal Central) pertenece el producto.
 PRODUCTOS = [
     {"nombre": "Avena arrollada integral", "imagen": "avena-arrollada-integral.jpg", "precio": "1850", "precio_anterior": None, "categoria": "Cereales", "descripcion": "Bolsa de 1 kg para desayunos y recetas.", "tags": ["best"]},
     {"nombre": "Granola con miel y almendras", "imagen": "Granola-con-miel-y-almendras.jpg", "precio": "3200", "precio_anterior": "3850", "categoria": "Cereales", "descripcion": "Crunch natural con frutos secos seleccionados.", "tags": ["offer", "best"]},
@@ -65,27 +78,33 @@ PRODUCTOS = [
 
 
 class Command(BaseCommand):
-    help = "Importa las categorías y productos de script.js a la base de datos Django."
+    help = "Importa las categorías y productos de script.js a Producto + InventarioSucursal (Sucursal Central)."
 
     def handle(self, *args, **options):
+        central, _ = Sucursal.objects.get_or_create(nombre="Sucursal Central", defaults={"activo": True})
+
         assets_dir = Path(settings.BASE_DIR) / "assets"
         media_productos_dir = Path(settings.MEDIA_ROOT) / "productos"
         media_productos_dir.mkdir(parents=True, exist_ok=True)
 
         categorias_creadas = 0
+        categorias_por_nombre = {}
         for data in CATEGORIAS:
-            _, created = Categoria.objects.update_or_create(
+            categoria, created = Categoria.objects.update_or_create(
+                sucursal=central,
                 nombre=data["nombre"],
                 defaults={"descripcion": data["descripcion"], "activo": True},
             )
+            categorias_por_nombre[data["nombre"]] = categoria
             categorias_creadas += created
 
         productos_creados = 0
+        inventarios_creados = 0
         imagenes_copiadas = 0
         imagenes_faltantes = []
 
         for data in PRODUCTOS:
-            categoria = Categoria.objects.get(nombre=data["categoria"])
+            categoria = categorias_por_nombre[data["categoria"]]
 
             imagen_rel = None
             origen = assets_dir / data["imagen"]
@@ -101,8 +120,8 @@ class Command(BaseCommand):
             if data["precio_anterior"] and "offer" not in tags:
                 tags.append("offer")
 
-            defaults = {
-                "categoria": categoria,
+            # Datos GLOBALES del producto (comparten todas las sucursales).
+            producto_defaults = {
                 "precio": data["precio"],
                 "precio_anterior": data["precio_anterior"],
                 "descripcion": data["descripcion"],
@@ -113,21 +132,36 @@ class Command(BaseCommand):
                 "activo": True,
             }
             if imagen_rel:
-                defaults["imagen"] = imagen_rel
+                producto_defaults["imagen"] = imagen_rel
 
-            _, created = Producto.objects.update_or_create(
+            producto, created = Producto.objects.update_or_create(
                 nombre=data["nombre"],
-                defaults=defaults,
+                defaults=producto_defaults,
             )
             productos_creados += created
 
+            # Inventario en Sucursal Central: stock y disponibilidad son datos
+            # operativos. Solo se inicializan al crear; si ya existe la fila
+            # (por ejemplo porque un administrador cargó stock desde el panel),
+            # NO se pisan en corridas posteriores del comando.
+            _, inv_created = InventarioSucursal.objects.get_or_create(
+                producto=producto,
+                sucursal=central,
+                defaults={"categoria": categoria, "stock": 0, "disponible": True},
+            )
+            inventarios_creados += inv_created
+
         self.stdout.write(self.style.SUCCESS(
-            f"Categorías: {Categoria.objects.count()} en base "
-            f"({categorias_creadas} nuevas en esta corrida)."
+            f"Categorías: {Categoria.objects.filter(sucursal=central).count()} en Sucursal Central "
+            f"({categorias_creadas} nuevas/actualizadas en esta corrida)."
         ))
         self.stdout.write(self.style.SUCCESS(
             f"Productos: {Producto.objects.count()} en base "
             f"({productos_creados} nuevos en esta corrida)."
+        ))
+        self.stdout.write(self.style.SUCCESS(
+            f"InventarioSucursal en Central: {InventarioSucursal.objects.filter(sucursal=central).count()} "
+            f"({inventarios_creados} nuevos en esta corrida)."
         ))
         self.stdout.write(f"Imágenes copiadas a media/productos/: {imagenes_copiadas}")
 

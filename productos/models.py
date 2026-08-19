@@ -1,4 +1,3 @@
-from django.core.validators import MinValueValidator
 from django.db import models
 
 
@@ -27,12 +26,10 @@ class Categoria(models.Model):
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=200)
-    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name="productos")
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     precio_anterior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     descripcion = models.TextField(blank=True)
     imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
-    stock = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
     activo = models.BooleanField(default=True)
     destacado = models.BooleanField(default=False)
     nuevo = models.BooleanField(default=False)

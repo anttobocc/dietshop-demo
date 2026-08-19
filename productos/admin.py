@@ -12,8 +12,8 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "categoria", "precio", "stock", "activo", "destacado", "oferta")
-    list_filter = ("categoria", "activo", "destacado", "oferta")
+    list_display = ("nombre", "precio", "activo", "destacado", "oferta")
+    list_filter = ("activo", "destacado", "oferta")
     search_fields = ("nombre", "descripcion")
 
 
