@@ -1,0 +1,79 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Sucursales | Panel Grandiet{% endblock %}
+{% block panel_content %}
+<div class="toolbar">
+  <h2>Sucursales ({{ sucursales|length }})</h2>
+</div>
+
+<div class="split-layout">
+  <div class="split-list">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Dirección</th><th>Usuarios con acceso</th><th>Estado</th><th>Acciones</th><th>Activa</th></tr>
+        </thead>
+        <tbody>
+          {% for sucursal in sucursales %}
+          <tr>
+            <td><strong>{{ sucursal.nombre }}</strong></td>
+            <td>{{ sucursal.direccion|default:"—" }}</td>
+            <td>
+              {% for u in sucursal.usuarios.all %}{{ u.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+            </td>
+            <td>
+              {% if sucursal.activo %}<span class="badge badge-best">activa</span>{% else %}<span class="badge badge-off">inactiva</span>{% endif %}
+            </td>
+            <td class="td-actions">
+              <div class="td-actions-inner">
+                <a class="btn btn-secondary btn-sm" href="{% url 'panel:sucursal_editar' sucursal.pk %}">Editar</a>
+              </div>
+            </td>
+            <td class="td-activo">
+              <form method="post" action="{% url 'panel:sucursal_toggle_activo' sucursal.pk %}" class="activo-form">
+                {% csrf_token %}
+                <input
+                  type="checkbox"
+                  name="activo"
+                  onchange="this.form.submit()"
+                  {% if sucursal.activo %}checked{% endif %}
+                  title="Sucursal activa"
+                  aria-label="Activar o desactivar {{ sucursal.nombre }}">
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="empty-row"><td colspan="6">No hay sucursales todavía.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="split-form">
+    <div class="panel-card">
+      <h2>Nueva sucursal</h2>
+      <form method="post" action="{% url 'panel:sucursal_crear' %}">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="field">
+          <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+          {{ form.nombre }}
+          {{ form.nombre.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.direccion.id_for_label }}">Dirección</label>
+          {{ form.direccion }}
+        </div>
+        <label class="tag-check">{{ form.activo }} Activa</label>
+        <div class="field usuarios-checklist">
+          <label>Usuarios con acceso</label>
+          {{ form.usuarios }}
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Crear sucursal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

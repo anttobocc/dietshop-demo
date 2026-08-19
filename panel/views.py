@@ -1,14 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
 from productos.models import Categoria, InventarioSucursal
+from sucursales.models import Sucursal
 from sucursales.permisos import get_sucursal_activa, set_sucursal_activa, sucursales_permitidas
 
-from .forms import CategoriaForm, InventarioForm, ProductoGlobalForm
+from .forms import CategoriaForm, InventarioForm, ProductoGlobalForm, SucursalForm
 
 
 class PanelLoginView(LoginView):
@@ -206,3 +208,59 @@ def categoria_editar(request, pk):
     else:
         form = CategoriaForm(instance=categoria)
     return render(request, "panel/categoria_form.html", {"form": form, "categoria": categoria})
+
+
+def _exigir_superusuario(request):
+    """Gestión de sucursales: exclusiva del administrador global."""
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
+
+@login_required
+def sucursales_lista(request):
+    _exigir_superusuario(request)
+    lista = Sucursal.objects.all().prefetch_related("usuarios").order_by("nombre")
+    return render(request, "panel/sucursales.html", {"sucursales": lista, "form": SucursalForm()})
+
+
+@login_required
+def sucursal_crear(request):
+    _exigir_superusuario(request)
+    if request.method == "POST":
+        form = SucursalForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Sucursal creada correctamente.")
+            return redirect("panel:sucursales")
+    else:
+        form = SucursalForm()
+    lista = Sucursal.objects.all().prefetch_related("usuarios").order_by("nombre")
+    return render(request, "panel/sucursales.html", {"sucursales": lista, "form": form})
+
+
+@login_required
+def sucursal_editar(request, pk):
+    _exigir_superusuario(request)
+    sucursal = get_object_or_404(Sucursal, pk=pk)
+    if request.method == "POST":
+        form = SucursalForm(request.POST, instance=sucursal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Sucursal actualizada correctamente.")
+            return redirect("panel:sucursales")
+    else:
+        form = SucursalForm(instance=sucursal)
+    return render(request, "panel/sucursal_form.html", {"form": form, "sucursal": sucursal})
+
+
+@login_required
+@require_POST
+def sucursal_toggle_activo(request, pk):
+    """Activa/desactiva una sucursal. Nunca la elimina: los datos históricos quedan intactos."""
+    _exigir_superusuario(request)
+    sucursal = get_object_or_404(Sucursal, pk=pk)
+    sucursal.activo = request.POST.get("activo") == "on"
+    sucursal.save(update_fields=["activo"])
+    estado = "activada" if sucursal.activo else "desactivada"
+    messages.success(request, f'"{sucursal.nombre}" fue {estado}.')
+    return redirect("panel:sucursales")

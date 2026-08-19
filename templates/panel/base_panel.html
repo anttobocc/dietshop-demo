@@ -8,6 +8,9 @@
     <nav class="panel-nav">
       <a class="panel-nav-link" href="{% url 'panel:dashboard' %}">Productos</a>
       <a class="panel-nav-link" href="{% url 'panel:categorias' %}">Categorías</a>
+      {% if user.is_superuser %}
+      <a class="panel-nav-link" href="{% url 'panel:sucursales' %}">Sucursales</a>
+      {% endif %}
       {% if sucursales_disponibles|length > 1 %}
       <form method="post" action="{% url 'panel:sucursal_activa' %}" class="sucursal-selector">
         {% csrf_token %}

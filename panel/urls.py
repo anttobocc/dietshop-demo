@@ -15,4 +15,8 @@ urlpatterns = [
     path('productos/<int:pk>/activo/', views.producto_toggle_activo, name='producto_toggle_activo'),
     path('categorias/', views.categorias, name='categorias'),
     path('categorias/<int:pk>/editar/', views.categoria_editar, name='categoria_editar'),
+    path('sucursales/', views.sucursales_lista, name='sucursales'),
+    path('sucursales/nueva/', views.sucursal_crear, name='sucursal_crear'),
+    path('sucursales/<int:pk>/editar/', views.sucursal_editar, name='sucursal_editar'),
+    path('sucursales/<int:pk>/activo/', views.sucursal_toggle_activo, name='sucursal_toggle_activo'),
 ]

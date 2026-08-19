@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from productos.models import Categoria, InventarioSucursal, Producto
+from sucursales.models import Sucursal
 
 
 class ProductoGlobalForm(forms.ModelForm):
@@ -57,3 +59,21 @@ class CategoriaForm(forms.ModelForm):
         model = Categoria
         fields = ["nombre", "descripcion", "activo"]
         widgets = {"descripcion": forms.Textarea(attrs={"rows": 2})}
+
+
+class SucursalForm(forms.ModelForm):
+    """CRUD de sucursales + a qué usuarios (no superusuarios) se les da acceso."""
+
+    class Meta:
+        model = Sucursal
+        fields = ["nombre", "direccion", "activo", "usuarios"]
+        widgets = {"usuarios": forms.CheckboxSelectMultiple}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Los superusuarios ya tienen acceso a todas las sucursales por
+        # defecto (ver sucursales.permisos.sucursales_permitidas), así que
+        # no tiene sentido ofrecerlos en esta lista de asignación manual.
+        User = get_user_model()
+        self.fields["usuarios"].queryset = User.objects.filter(is_superuser=False).order_by("username")
+        self.fields["usuarios"].required = False
