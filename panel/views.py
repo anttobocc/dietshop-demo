@@ -5,9 +5,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_POST
 
-from productos.models import Categoria, Producto
+from productos.models import Categoria, InventarioSucursal
+from sucursales.permisos import get_sucursal_activa, set_sucursal_activa, sucursales_permitidas
 
-from .forms import CategoriaForm, ProductoForm
+from .forms import CategoriaForm, InventarioForm, ProductoGlobalForm
 
 
 class PanelLoginView(LoginView):
@@ -19,90 +20,183 @@ class PanelLogoutView(LogoutView):
     next_page = reverse_lazy("panel:login")
 
 
-def _lista_productos():
-    return Producto.objects.select_related("categoria").order_by("categoria__nombre", "nombre")
+@login_required
+@require_POST
+def sucursal_activa_set(request):
+    """Cambia la sucursal con la que trabaja el usuario. Solo acepta sucursales que le están permitidas."""
+    permitidas = sucursales_permitidas(request.user)
+    sucursal = get_object_or_404(permitidas, pk=request.POST.get("sucursal_id"))
+    set_sucursal_activa(request, sucursal)
+    return redirect("panel:dashboard")
+
+
+def _lista_inventarios(sucursal):
+    return (
+        InventarioSucursal.objects.filter(sucursal=sucursal)
+        .select_related("producto", "categoria")
+        .order_by("categoria__nombre", "producto__nombre")
+    )
 
 
 @login_required
 def dashboard(request):
-    return render(request, "panel/dashboard.html", {"productos": _lista_productos()})
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return render(request, "panel/sin_sucursal.html")
+    return render(request, "panel/dashboard.html", {
+        "inventarios": _lista_inventarios(sucursal),
+    })
 
 
 @login_required
 def producto_crear(request):
+    """Crea un producto nuevo (global) junto con su inventario en la sucursal activa.
+
+    Cualquier usuario autorizado en la sucursal puede crear productos: al no
+    existir todavía el producto, no hay riesgo de pisar datos de otra sucursal.
+    """
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+
     if request.method == "POST":
-        form = ProductoForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
+        prod_form = ProductoGlobalForm(request.POST, request.FILES)
+        inv_form = InventarioForm(request.POST, sucursal=sucursal)
+        if prod_form.is_valid() and inv_form.is_valid():
+            producto = prod_form.save()
+            inventario = inv_form.save(commit=False)
+            inventario.producto = producto
+            inventario.sucursal = sucursal
+            inventario.save()
             messages.success(request, "Producto creado correctamente.")
             return redirect("panel:dashboard")
     else:
-        form = ProductoForm()
+        prod_form = ProductoGlobalForm()
+        inv_form = InventarioForm(sucursal=sucursal)
+
     return render(request, "panel/dashboard.html", {
-        "productos": _lista_productos(),
-        "form": form,
+        "inventarios": _lista_inventarios(sucursal),
+        "prod_form": prod_form,
+        "inv_form": inv_form,
         "modo": "crear",
+        "puede_editar_global": True,
     })
 
 
 @login_required
 def producto_editar(request, pk):
-    producto = get_object_or_404(Producto, pk=pk)
+    """Edita el inventario de un producto en la sucursal activa.
+
+    Los datos globales del producto (nombre, precio, imagen, tags, activo,
+    etc.) solo los puede modificar un superusuario: si no lo es, ni siquiera
+    se instancia el formulario de esos campos con el POST recibido, así que
+    un formulario manipulado no tiene ningún efecto sobre ellos.
+    """
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+
+    # Seguridad: el pk pertenece siempre a InventarioSucursal, filtrado por
+    # la sucursal activa. Un id de otra sucursal (o inexistente) da 404.
+    inventario = get_object_or_404(
+        InventarioSucursal.objects.select_related("producto"),
+        pk=pk,
+        sucursal=sucursal,
+    )
+    producto = inventario.producto
+    puede_editar_global = request.user.is_superuser
+
     if request.method == "POST":
-        form = ProductoForm(request.POST, request.FILES, instance=producto)
-        if form.is_valid():
-            form.save()
+        inv_form = InventarioForm(request.POST, instance=inventario, sucursal=sucursal)
+        prod_form = ProductoGlobalForm(request.POST, request.FILES, instance=producto) if puede_editar_global else None
+
+        inv_ok = inv_form.is_valid()
+        prod_ok = prod_form.is_valid() if prod_form else True
+
+        if inv_ok and prod_ok:
+            inv_form.save()
+            if prod_form:
+                prod_form.save()
             messages.success(request, "Producto actualizado correctamente.")
             return redirect("panel:dashboard")
     else:
-        form = ProductoForm(instance=producto)
+        inv_form = InventarioForm(instance=inventario, sucursal=sucursal)
+        prod_form = ProductoGlobalForm(instance=producto) if puede_editar_global else None
+
     return render(request, "panel/dashboard.html", {
-        "productos": _lista_productos(),
-        "form": form,
+        "inventarios": _lista_inventarios(sucursal),
+        "prod_form": prod_form,
+        "inv_form": inv_form,
         "modo": "editar",
         "producto": producto,
+        "puede_editar_global": puede_editar_global,
     })
 
 
 @login_required
 @require_POST
 def producto_eliminar(request, pk):
-    """Elimina el producto definitivamente. Se confirma con un modal en el propio dashboard."""
-    producto = get_object_or_404(Producto, pk=pk)
-    producto.delete()
-    messages.success(request, "Producto eliminado definitivamente.")
+    """Quita el producto del inventario de la sucursal activa.
+
+    No borra el Producto global: otras sucursales que también lo tengan en
+    su inventario no se ven afectadas. Borrar el producto de toda la cadena
+    queda fuera del alcance de esta pantalla (sucursal-scoped por diseño).
+    """
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+    inventario = get_object_or_404(InventarioSucursal, pk=pk, sucursal=sucursal)
+    nombre = inventario.producto.nombre
+    inventario.delete()
+    messages.success(request, f'"{nombre}" se quitó del inventario de {sucursal.nombre}.')
     return redirect("panel:dashboard")
 
 
 @login_required
 @require_POST
 def producto_toggle_activo(request, pk):
-    """Activa/desactiva un producto sin borrarlo (checkbox de la tabla)."""
-    producto = get_object_or_404(Producto, pk=pk)
-    producto.activo = request.POST.get("activo") == "on"
-    producto.save(update_fields=["activo"])
-    estado = "activado" if producto.activo else "desactivado"
-    messages.success(request, f'"{producto.nombre}" fue {estado}.')
+    """Activa/desactiva la disponibilidad del producto en la sucursal activa (no afecta otras sucursales)."""
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+    inventario = get_object_or_404(InventarioSucursal, pk=pk, sucursal=sucursal)
+    inventario.disponible = request.POST.get("activo") == "on"
+    inventario.save(update_fields=["disponible"])
+    estado = "disponible" if inventario.disponible else "no disponible"
+    messages.success(request, f'"{inventario.producto.nombre}" quedó {estado} en {sucursal.nombre}.')
     return redirect("panel:dashboard")
 
 
 @login_required
 def categorias(request):
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+
     if request.method == "POST":
         form = CategoriaForm(request.POST)
         if form.is_valid():
-            form.save()
+            categoria = form.save(commit=False)
+            categoria.sucursal = sucursal
+            categoria.save()
             messages.success(request, "Categoría creada correctamente.")
             return redirect("panel:categorias")
     else:
         form = CategoriaForm()
-    lista = Categoria.objects.all().order_by("nombre")
+
+    lista = Categoria.objects.filter(sucursal=sucursal).order_by("nombre")
     return render(request, "panel/categorias.html", {"categorias": lista, "form": form})
 
 
 @login_required
 def categoria_editar(request, pk):
-    categoria = get_object_or_404(Categoria, pk=pk)
+    sucursal = get_sucursal_activa(request)
+    if sucursal is None:
+        return redirect("panel:dashboard")
+
+    # Seguridad: solo categorías de la sucursal activa. Un id de otra
+    # sucursal (o inexistente) da 404, nunca se puede editar por URL manual.
+    categoria = get_object_or_404(Categoria, pk=pk, sucursal=sucursal)
     if request.method == "POST":
         form = CategoriaForm(request.POST, instance=categoria)
         if form.is_valid():

@@ -1,54 +1,82 @@
 {% comment %}
 Panel de formulario (crear/editar producto). Se incluye desde dashboard.html
 a la derecha de la lista, para no abandonar la pagina al editar.
+
+Combina dos formularios:
+- prod_form: datos GLOBALES del producto (comparten todas las sucursales).
+  Solo se muestra editable si puede_editar_global es True (superusuario, o
+  siempre al crear). Si es False, los datos se muestran de solo lectura.
+- inv_form: datos del INVENTARIO en la sucursal activa (categoria/stock/
+  disponible). Siempre editable por cualquier usuario autorizado.
 {% endcomment %}
 <div class="panel-card">
   <h2>{% if modo == "editar" %}Editar producto{% else %}Nuevo producto{% endif %}</h2>
+
+  {% if modo == "editar" and not puede_editar_global %}
+  <div class="datos-globales-solo-lectura">
+    <p><strong>{{ producto.nombre }}</strong></p>
+    <p>
+      ${{ producto.precio }}
+      {% if producto.precio_anterior %}<span class="old-price">${{ producto.precio_anterior }}</span>{% endif %}
+    </p>
+    {% if producto.descripcion %}<p>{{ producto.descripcion }}</p>{% endif %}
+    {% if producto.imagen %}<img class="img-thumb" src="{{ producto.imagen.url }}" alt="">{% endif %}
+    <small>Estos datos son del producto y son compartidos por todas las sucursales. Solo un administrador puede modificarlos.</small>
+  </div>
+  {% endif %}
+
   <form method="post" enctype="multipart/form-data" novalidate
-        action="{% if modo == 'editar' %}{% url 'panel:producto_editar' producto.pk %}{% else %}{% url 'panel:producto_crear' %}{% endif %}">
+        action="{% if modo == 'editar' %}{% url 'panel:producto_editar' inv_form.instance.pk %}{% else %}{% url 'panel:producto_crear' %}{% endif %}">
     {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div class="field">
-      <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
-      {{ form.nombre }}
-      {{ form.nombre.errors }}
-    </div>
+
+    {% if prod_form %}
+      {{ prod_form.non_field_errors }}
+      <div class="field">
+        <label for="{{ prod_form.nombre.id_for_label }}">Nombre *</label>
+        {{ prod_form.nombre }}
+        {{ prod_form.nombre.errors }}
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label for="{{ prod_form.precio.id_for_label }}">Precio (ARS) *</label>
+          {{ prod_form.precio }}
+          {{ prod_form.precio.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ prod_form.precio_anterior.id_for_label }}">Precio anterior (oferta)</label>
+          {{ prod_form.precio_anterior }}
+        </div>
+      </div>
+      <div class="field">
+        <label for="{{ prod_form.descripcion.id_for_label }}">Descripción</label>
+        {{ prod_form.descripcion }}
+      </div>
+      <div class="field">
+        <label for="{{ prod_form.imagen.id_for_label }}">{% if modo == "editar" %}Modificar imagen{% else %}Imagen{% endif %}</label>
+        {{ prod_form.imagen }}
+      </div>
+      <div class="tags-group">
+        <label class="tag-check">{{ prod_form.activo }} Activo (global)</label>
+        <label class="tag-check">{{ prod_form.destacado }} Destacado</label>
+        <label class="tag-check">{{ prod_form.nuevo }} Nuevo</label>
+        <label class="tag-check">{{ prod_form.oferta }} Oferta</label>
+      </div>
+    {% endif %}
+
     <div class="form-row">
       <div class="field">
-        <label for="{{ form.categoria.id_for_label }}">Categoría *</label>
-        {{ form.categoria }}
-        {{ form.categoria.errors }}
+        <label for="{{ inv_form.categoria.id_for_label }}">Categoría en {{ sucursal_activa.nombre }} *</label>
+        {{ inv_form.categoria }}
+        {{ inv_form.categoria.errors }}
       </div>
       <div class="field">
-        <label for="{{ form.stock.id_for_label }}">Stock</label>
-        {{ form.stock }}
+        <label for="{{ inv_form.stock.id_for_label }}">Stock en {{ sucursal_activa.nombre }}</label>
+        {{ inv_form.stock }}
+        {{ inv_form.stock.errors }}
       </div>
     </div>
-    <div class="form-row">
-      <div class="field">
-        <label for="{{ form.precio.id_for_label }}">Precio (ARS) *</label>
-        {{ form.precio }}
-        {{ form.precio.errors }}
-      </div>
-      <div class="field">
-        <label for="{{ form.precio_anterior.id_for_label }}">Precio anterior (oferta)</label>
-        {{ form.precio_anterior }}
-      </div>
-    </div>
-    <div class="field">
-      <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
-      {{ form.descripcion }}
-    </div>
-    <div class="field">
-      <label for="{{ form.imagen.id_for_label }}">{% if modo == "editar" %}Modificar imagen{% else %}Imagen{% endif %}</label>
-      {{ form.imagen }}
-    </div>
-    <div class="tags-group">
-      <label class="tag-check">{{ form.activo }} Activo</label>
-      <label class="tag-check">{{ form.destacado }} Destacado</label>
-      <label class="tag-check">{{ form.nuevo }} Nuevo</label>
-      <label class="tag-check">{{ form.oferta }} Oferta</label>
-    </div>
+    <label class="tag-check">{{ inv_form.disponible }} Disponible en {{ sucursal_activa.nombre }}</label>
+
     <div class="form-actions">
       <a class="btn btn-secondary" href="{% url 'panel:dashboard' %}">Cancelar</a>
       <button class="btn btn-primary" type="submit">Guardar</button>

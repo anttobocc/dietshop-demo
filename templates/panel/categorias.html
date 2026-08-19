@@ -2,7 +2,7 @@
 {% block title %}Categorías | Panel Grandiet{% endblock %}
 {% block panel_content %}
 <div class="toolbar">
-  <h2>Categorías ({{ categorias|length }})</h2>
+  <h2>Categorías de {{ sucursal_activa.nombre }} ({{ categorias|length }})</h2>
 </div>
 
 <div class="split-layout">
@@ -34,7 +34,7 @@
 
   <div class="split-form">
     <div class="panel-card">
-      <h2>Nueva categoría</h2>
+      <h2>Nueva categoría en {{ sucursal_activa.nombre }}</h2>
       <form method="post">
         {% csrf_token %}
         {{ form.non_field_errors }}

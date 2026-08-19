@@ -50,6 +50,13 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
 .panel-nav form { margin: 0; }
 .panel-nav-link { color: #444; font-size: .95rem; font-weight: 600; text-decoration: none; background: none; border: none; padding: 0; }
 .panel-nav-link:hover { color: #8DB33E; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.sucursal-selector { margin: 0; }
+.sucursal-selector select {
+  padding: .4rem .7rem; border: 1.5px solid #ddd; border-radius: 7px;
+  font-size: .85rem; font-weight: 600; color: #444; background: #fff; cursor: pointer;
+}
+.sucursal-badge { font-size: .85rem; font-weight: 600; color: #4a7a10; background: #e8f0d5; padding: .3rem .7rem; border-radius: 20px; }
 .panel-main { padding: 1.5rem; max-width: 1140px; margin: 0 auto; }
 /* Modificador opcional (solo lo usa el dashboard de productos, ver panel_main_class). */
 .panel-main-wide { max-width: 1600px; padding: 2rem 3rem; }
@@ -59,6 +66,13 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
 .toolbar-right { display: flex; gap: .6rem; align-items: center; }
 .panel-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 1.75rem; max-width: 560px; margin-top: 1.5rem; }
 .panel-card h2 { margin-top: 0; font-size: 1.1rem; }
+.datos-globales-solo-lectura {
+  background: #f8f8f4; border: 1px dashed #ddd; border-radius: 8px;
+  padding: 1rem 1.1rem; margin-bottom: 1.25rem;
+}
+.datos-globales-solo-lectura p { margin: 0 0 .4rem; font-size: .9rem; }
+.datos-globales-solo-lectura small { color: #999; }
+.datos-globales-solo-lectura .img-thumb { width: 56px; height: 56px; margin-bottom: .4rem; }
 
 /* Mensajes de confirmacion (crear/editar/activar/desactivar) */
 .panel-messages { list-style: none; margin: 0 0 1.25rem; padding: 0; display: flex; flex-direction: column; gap: .4rem; }

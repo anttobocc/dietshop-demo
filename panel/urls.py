@@ -7,6 +7,7 @@ app_name = 'panel'
 urlpatterns = [
     path('login/', views.PanelLoginView.as_view(), name='login'),
     path('logout/', views.PanelLogoutView.as_view(), name='logout'),
+    path('sucursal-activa/', views.sucursal_activa_set, name='sucursal_activa'),
     path('', views.dashboard, name='dashboard'),
     path('productos/nuevo/', views.producto_crear, name='producto_crear'),
     path('productos/<int:pk>/editar/', views.producto_editar, name='producto_editar'),
