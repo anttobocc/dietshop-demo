@@ -3,7 +3,17 @@ from django.db import models
 
 
 class Categoria(models.Model):
-    nombre = models.CharField(max_length=100, unique=True)
+    # Nullable temporalmente durante la migración incremental a sucursales;
+    # se vuelve obligatorio (null=False) en una etapa posterior, una vez
+    # que las 7 categorías existentes ya tengan sucursal asignada.
+    sucursal = models.ForeignKey(
+        "sucursales.Sucursal",
+        on_delete=models.PROTECT,
+        related_name="categorias",
+        null=True,
+        blank=True,
+    )
+    nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -12,6 +22,9 @@ class Categoria(models.Model):
         verbose_name = "categoría"
         verbose_name_plural = "categorías"
         ordering = ["nombre"]
+        constraints = [
+            models.UniqueConstraint(fields=["sucursal", "nombre"], name="categoria_unica_por_sucursal"),
+        ]
 
     def __str__(self):
         return self.nombre
