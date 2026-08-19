@@ -57,3 +57,35 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class InventarioSucursal(models.Model):
+    producto = models.ForeignKey(
+        Producto,
+        on_delete=models.CASCADE,
+        related_name="inventarios",
+    )
+    sucursal = models.ForeignKey(
+        "sucursales.Sucursal",
+        on_delete=models.PROTECT,
+        related_name="inventarios",
+    )
+    categoria = models.ForeignKey(
+        Categoria,
+        on_delete=models.PROTECT,
+        related_name="inventarios",
+    )
+    stock = models.PositiveIntegerField(default=0)
+    disponible = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "inventario por sucursal"
+        verbose_name_plural = "inventarios por sucursal"
+        constraints = [
+            models.UniqueConstraint(fields=["producto", "sucursal"], name="inventario_unico_por_sucursal"),
+        ]
+
+    def __str__(self):
+        return f"{self.producto} - {self.sucursal}"
