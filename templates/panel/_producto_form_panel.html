@@ -1,0 +1,57 @@
+{% comment %}
+Panel de formulario (crear/editar producto). Se incluye desde dashboard.html
+a la derecha de la lista, para no abandonar la pagina al editar.
+{% endcomment %}
+<div class="panel-card">
+  <h2>{% if modo == "editar" %}Editar producto{% else %}Nuevo producto{% endif %}</h2>
+  <form method="post" enctype="multipart/form-data" novalidate
+        action="{% if modo == 'editar' %}{% url 'panel:producto_editar' producto.pk %}{% else %}{% url 'panel:producto_crear' %}{% endif %}">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field">
+      <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+      {{ form.nombre }}
+      {{ form.nombre.errors }}
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="{{ form.categoria.id_for_label }}">Categoría *</label>
+        {{ form.categoria }}
+        {{ form.categoria.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.stock.id_for_label }}">Stock</label>
+        {{ form.stock }}
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label for="{{ form.precio.id_for_label }}">Precio (ARS) *</label>
+        {{ form.precio }}
+        {{ form.precio.errors }}
+      </div>
+      <div class="field">
+        <label for="{{ form.precio_anterior.id_for_label }}">Precio anterior (oferta)</label>
+        {{ form.precio_anterior }}
+      </div>
+    </div>
+    <div class="field">
+      <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+      {{ form.descripcion }}
+    </div>
+    <div class="field">
+      <label for="{{ form.imagen.id_for_label }}">{% if modo == "editar" %}Modificar imagen{% else %}Imagen{% endif %}</label>
+      {{ form.imagen }}
+    </div>
+    <div class="tags-group">
+      <label class="tag-check">{{ form.activo }} Activo</label>
+      <label class="tag-check">{{ form.destacado }} Destacado</label>
+      <label class="tag-check">{{ form.nuevo }} Nuevo</label>
+      <label class="tag-check">{{ form.oferta }} Oferta</label>
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{% url 'panel:dashboard' %}">Cancelar</a>
+      <button class="btn btn-primary" type="submit">Guardar</button>
+    </div>
+  </form>
+</div>

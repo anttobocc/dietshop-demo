@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/panel.css' %}">{% endblock %}
+{% block content %}
+<div class="panel-shell">
+  <header class="panel-header">
+    <div class="panel-brand"><span class="mark">G</span><span>Grandiet <small>Admin</small></span></div>
+    <nav class="panel-nav">
+      <a class="panel-nav-link" href="{% url 'panel:dashboard' %}">Productos</a>
+      <a class="panel-nav-link" href="{% url 'panel:categorias' %}">Categorías</a>
+      <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button class="btn btn-primary btn-sm" type="submit">Cerrar sesión</button></form>
+    </nav>
+  </header>
+  <main class="panel-main {% block panel_main_class %}{% endblock %}">
+    {% if messages %}
+      <ul class="panel-messages">
+        {% for message in messages %}<li class="panel-message">{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block panel_content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

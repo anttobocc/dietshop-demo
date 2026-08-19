@@ -1,0 +1,98 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Productos | Panel Grandiet{% endblock %}
+{% block panel_main_class %}panel-main-wide{% endblock %}
+{% block panel_content %}
+<div class="toolbar">
+  <h2>Productos ({{ productos|length }})</h2>
+  <div class="toolbar-right">
+    <a class="btn btn-primary" href="{% url 'panel:producto_crear' %}">+ Agregar producto</a>
+  </div>
+</div>
+
+<div class="{% if form %}products-layout{% endif %}">
+  <div class="products-list">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Imagen</th>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Stock</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+            <th>Activo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for producto in productos %}
+          <tr>
+            <td>
+              {% if producto.imagen %}
+                <img class="img-thumb" src="{{ producto.imagen.url }}" alt="">
+              {% else %}
+                <div class="no-img">sin img</div>
+              {% endif %}
+            </td>
+            <td><strong>{{ producto.nombre }}</strong></td>
+            <td>{{ producto.categoria.nombre }}</td>
+            <td class="price-col">
+              ${{ producto.precio }}
+              {% if producto.precio_anterior %}<span class="old-price">${{ producto.precio_anterior }}</span>{% endif %}
+            </td>
+            <td class="{% if producto.stock <= 3 %}stock-low{% endif %}">{{ producto.stock }}</td>
+            <td>
+              {% if producto.nuevo %}<span class="badge badge-new">nuevo</span>{% endif %}
+              {% if producto.oferta %}<span class="badge badge-offer">oferta</span>{% endif %}
+            </td>
+            <td class="td-actions">
+              <div class="td-actions-inner">
+                <a class="btn btn-secondary btn-sm" href="{% url 'panel:producto_editar' producto.pk %}">Editar</a>
+                <a class="btn btn-danger btn-sm" href="#borrar-{{ producto.pk }}">Borrar</a>
+              </div>
+            </td>
+            <td class="td-activo">
+              <form method="post" action="{% url 'panel:producto_toggle_activo' producto.pk %}" class="activo-form">
+                {% csrf_token %}
+                <input
+                  type="checkbox"
+                  name="activo"
+                  onchange="this.form.submit()"
+                  {% if producto.activo %}checked{% endif %}
+                  title="Producto activo (visible en el catálogo público)"
+                  aria-label="Activar o desactivar {{ producto.nombre }}">
+              </form>
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="empty-row"><td colspan="8">No hay productos. Agregá el primero.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if form %}
+  <div class="products-form">
+    {% include "panel/_producto_form_panel.html" %}
+  </div>
+  {% endif %}
+</div>
+
+{% for producto in productos %}
+<div id="borrar-{{ producto.pk }}" class="modal-overlay">
+  <div class="modal-box">
+    <h3>¿Borrar "{{ producto.nombre }}"?</h3>
+    <p>Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <a class="btn btn-secondary" href="#">Cancelar</a>
+      <form method="post" action="{% url 'panel:producto_eliminar' producto.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Borrar definitivamente</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\antto\\\\OneDrive\\\\Desktop\\\\Grandiet demo\" -Recurse | Select-Object FullName, PSIsContainer | Sort-Object FullName | ForEach-Object { if \\($_.PSIsContainer\\) { Write-Output \"$\\($_.FullName\\)\" } else { Write-Output $_.FullName } })"
+    ]
+  }
+}

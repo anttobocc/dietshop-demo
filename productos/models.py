@@ -1,0 +1,46 @@
+from django.core.validators import MinValueValidator
+from django.db import models
+
+
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "categoría"
+        verbose_name_plural = "categorías"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
+class Producto(models.Model):
+    nombre = models.CharField(max_length=200)
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, related_name="productos")
+    precio = models.DecimalField(max_digits=10, decimal_places=2)
+    precio_anterior = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    descripcion = models.TextField(blank=True)
+    imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
+    stock = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
+    activo = models.BooleanField(default=True)
+    destacado = models.BooleanField(default=False)
+    nuevo = models.BooleanField(default=False)
+    oferta = models.BooleanField(default=False)
+    tags = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="Lista separada por comas, ej: best,new,offer",
+    )
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "producto"
+        verbose_name_plural = "productos"
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre

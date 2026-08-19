@@ -1,0 +1,25 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Editar categoría | Panel Grandiet{% endblock %}
+{% block panel_content %}
+<div class="panel-card">
+  <h2>Editar categoría</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field">
+      <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+      {{ form.nombre }}
+      {{ form.nombre.errors }}
+    </div>
+    <div class="field">
+      <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+      {{ form.descripcion }}
+    </div>
+    <label class="tag-check">{{ form.activo }} Activa</label>
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{% url 'panel:categorias' %}">Cancelar</a>
+      <button class="btn btn-primary" type="submit">Guardar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Ingresar | Panel Grandiet{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/panel.css' %}">{% endblock %}
+{% block content %}
+<div class="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="mark">G</span>
+      <div><strong>Grandiet</strong><small>Corrientes</small></div>
+    </div>
+    <h1>Panel de administración</h1>
+    <form method="post">
+      {% csrf_token %}
+      {% if form.errors %}<p class="error-msg">Usuario o contraseña incorrectos.</p>{% endif %}
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Usuario</label>
+        {{ form.username }}
+      </div>
+      <div class="field">
+        <label for="{{ form.password.id_for_label }}">Contraseña</label>
+        {{ form.password }}
+      </div>
+      <button class="btn btn-primary btn-full" type="submit">Ingresar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

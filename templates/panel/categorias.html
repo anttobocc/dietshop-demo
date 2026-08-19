@@ -1,0 +1,58 @@
+{% extends "panel/base_panel.html" %}
+{% block title %}Categorías | Panel Grandiet{% endblock %}
+{% block panel_content %}
+<div class="toolbar">
+  <h2>Categorías ({{ categorias|length }})</h2>
+</div>
+
+<div class="split-layout">
+  <div class="split-list">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for categoria in categorias %}
+          <tr>
+            <td><strong>{{ categoria.nombre }}</strong></td>
+            <td>{{ categoria.descripcion }}</td>
+            <td>
+              {% if categoria.activo %}<span class="badge badge-best">activa</span>{% else %}<span class="badge badge-off">inactiva</span>{% endif %}
+            </td>
+            <td class="td-actions">
+              <a class="btn btn-secondary btn-sm" href="{% url 'panel:categoria_editar' categoria.pk %}">Editar</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr class="empty-row"><td colspan="4">No hay categorías.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="split-form">
+    <div class="panel-card">
+      <h2>Nueva categoría</h2>
+      <form method="post">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="field">
+          <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+          {{ form.nombre }}
+          {{ form.nombre.errors }}
+        </div>
+        <div class="field">
+          <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+          {{ form.descripcion }}
+        </div>
+        <label class="tag-check">{{ form.activo }} Activa</label>
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit">Crear categoría</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
