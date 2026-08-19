@@ -66,8 +66,11 @@ const els = {
   homeSearchInput: document.querySelector("#homeSearchInput"),
   bestSellerGrid: document.querySelector("#bestSellerGrid"),
   offerGrid: document.querySelector("#offerGrid"),
-  sucursalSelectorWrap: document.querySelector("#sucursalSelectorWrap"),
-  sucursalSelect: document.querySelector("#sucursalSelect"),
+  sucursalTrigger: document.querySelector("#sucursalTrigger"),
+  sucursalActualLabel: document.querySelector("#sucursalActualLabel"),
+  sucursalModal: document.querySelector("#sucursalModal"),
+  sucursalModalClose: document.querySelector("#sucursalModalClose"),
+  sucursalList: document.querySelector("#sucursalList"),
 };
 
 function money(value) {
@@ -421,21 +424,18 @@ function bindEvents() {
 
   els.sendOrder?.addEventListener("click", sendOrder);
 
-  els.sucursalSelect?.addEventListener("change", async (event) => {
-    sucursalActual = Number(event.target.value);
-    localStorage.setItem(SUCURSAL_KEY, String(sucursalActual));
-    try {
-      await loadCatalogData();
-    } catch (error) {
-      console.error("Error al cambiar de sucursal:", error);
-      showLoadError();
-      return;
-    }
-    applyUrlFilters();
-    renderCategories();
-    renderHomeProducts();
-    renderFilterButtons();
-    renderProducts();
+  els.sucursalTrigger?.addEventListener("click", abrirSucursalModal);
+  els.sucursalModalClose?.addEventListener("click", cerrarSucursalModal);
+  els.sucursalModal?.addEventListener("click", (event) => {
+    if (event.target === els.sucursalModal) cerrarSucursalModal();
+  });
+  els.sucursalList?.addEventListener("click", (event) => {
+    const option = event.target.closest("[data-sucursal-id]");
+    if (!option) return;
+    seleccionarSucursal(Number(option.dataset.sucursalId));
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && els.sucursalModal && !els.sucursalModal.hidden) cerrarSucursalModal();
   });
 }
 
@@ -459,16 +459,65 @@ async function resolverSucursalPublica() {
   if (sucursalActual) localStorage.setItem(SUCURSAL_KEY, String(sucursalActual));
 }
 
-function renderSucursalSelector() {
-  if (!els.sucursalSelectorWrap || !els.sucursalSelect) return;
-  if (sucursales.length <= 1) {
-    els.sucursalSelectorWrap.hidden = true;
+function nombreSucursalActual() {
+  const sucursal = sucursales.find((s) => s.id === sucursalActual);
+  return sucursal ? sucursal.name : "Sin sucursales disponibles";
+}
+
+function renderSucursalUI() {
+  if (els.sucursalActualLabel) els.sucursalActualLabel.textContent = nombreSucursalActual();
+
+  // Con 0 o 1 sucursal no tiene sentido abrir un modal a elegir: el boton
+  // sigue mostrando la ubicacion, pero queda deshabilitado (no oculto), asi
+  // el visitante siempre ve claramente donde esta comprando.
+  if (els.sucursalTrigger) els.sucursalTrigger.disabled = sucursales.length <= 1;
+
+  if (!els.sucursalList) return;
+  els.sucursalList.innerHTML = sucursales.length
+    ? sucursales.map((s) => `
+        <li>
+          <button type="button" class="sucursal-option ${s.id === sucursalActual ? "is-active" : ""}" data-sucursal-id="${s.id}">
+            <span>${s.name}</span>
+            <span class="check" aria-hidden="true">✓ Seleccionada</span>
+          </button>
+        </li>
+      `).join("")
+    : `<li class="sucursal-modal-empty">No hay sucursales disponibles en este momento.</li>`;
+}
+
+function abrirSucursalModal() {
+  if (!els.sucursalModal || els.sucursalTrigger?.disabled) return;
+  els.sucursalModal.hidden = false;
+  els.sucursalTrigger?.setAttribute("aria-expanded", "true");
+}
+
+function cerrarSucursalModal() {
+  if (!els.sucursalModal) return;
+  els.sucursalModal.hidden = true;
+  els.sucursalTrigger?.setAttribute("aria-expanded", "false");
+}
+
+async function seleccionarSucursal(id) {
+  if (id === sucursalActual) {
+    cerrarSucursalModal();
     return;
   }
-  els.sucursalSelectorWrap.hidden = false;
-  els.sucursalSelect.innerHTML = sucursales.map((s) => `
-    <option value="${s.id}" ${s.id === sucursalActual ? "selected" : ""}>${s.name}</option>
-  `).join("");
+  sucursalActual = id;
+  localStorage.setItem(SUCURSAL_KEY, String(sucursalActual));
+  cerrarSucursalModal();
+  renderSucursalUI();
+  try {
+    await loadCatalogData();
+  } catch (error) {
+    console.error("Error al cambiar de sucursal:", error);
+    showLoadError();
+    return;
+  }
+  applyUrlFilters();
+  renderCategories();
+  renderHomeProducts();
+  renderFilterButtons();
+  renderProducts();
 }
 
 async function loadCatalogData() {
@@ -481,8 +530,8 @@ async function loadCatalogData() {
   categories = await categoriesRes.json();
 }
 
-function showLoadError() {
-  const message = `<p class="product-card product-body">No se pudieron cargar los productos. Intenta nuevamente.</p>`;
+function showLoadError(texto) {
+  const message = `<p class="product-card product-body">${texto || "No se pudieron cargar los productos. Intenta nuevamente."}</p>`;
   if (els.productGrid) els.productGrid.innerHTML = message;
   if (els.bestSellerGrid) els.bestSellerGrid.innerHTML = message;
   if (els.offerGrid) els.offerGrid.innerHTML = message;
@@ -497,8 +546,11 @@ async function init() {
 
   try {
     await resolverSucursalPublica();
-    if (!sucursalActual) throw new Error("No hay sucursales activas");
-    renderSucursalSelector();
+    renderSucursalUI();
+    if (!sucursalActual) {
+      showLoadError("No hay sucursales disponibles en este momento.");
+      return;
+    }
     await loadCatalogData();
   } catch (error) {
     console.error("Error al cargar productos desde Django:", error);

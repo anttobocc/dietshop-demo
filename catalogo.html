@@ -29,9 +29,11 @@
           <a href="index.html#categorias">Categorias</a>
         </div>
 
-        <div class="sucursal-picker" id="sucursalSelectorWrap" hidden>
-          <label class="sr-only" for="sucursalSelect">Sucursal</label>
-          <select id="sucursalSelect"></select>
+        <div class="sucursal-picker">
+          <button type="button" class="sucursal-trigger" id="sucursalTrigger" aria-haspopup="dialog" aria-controls="sucursalModal">
+            <span class="sucursal-trigger-label">Ubicación actual</span>
+            <span class="sucursal-trigger-value" id="sucursalActualLabel">Cargando…</span>
+          </button>
         </div>
 
         <button class="cart-button" type="button" id="openCart" aria-controls="cartDrawer" aria-expanded="false">
@@ -106,6 +108,20 @@
         </div>
       </div>
     </aside>
+
+    <div class="sucursal-modal-overlay" id="sucursalModal" role="dialog" aria-modal="true" aria-labelledby="sucursalModalTitle" hidden>
+      <div class="sucursal-modal-box">
+        <div class="sucursal-modal-header">
+          <div>
+            <p class="eyebrow">Ubicación actual</p>
+            <h2 id="sucursalModalTitle">Elegí tu sucursal</h2>
+          </div>
+          <button type="button" class="icon-button" id="sucursalModalClose" aria-label="Cerrar">×</button>
+        </div>
+        <p>Seleccioná la sucursal donde querés comprar. Vamos a mostrarte su catálogo y stock disponible.</p>
+        <ul class="sucursal-list" id="sucursalList"></ul>
+      </div>
+    </div>
 
     <footer class="footer section-pad">
       <div class="footer-grid">
