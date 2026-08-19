@@ -60,7 +60,7 @@ button { cursor: pointer; }
 .nav {
   min-height: var(--header-height);
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: .75rem;
   max-width: 1220px;
@@ -135,8 +135,21 @@ button { cursor: pointer; }
   color: var(--green-dark);
   background: var(--soft-green);
 }
-.cart-button {
+.sucursal-picker {
   grid-column: 3;
+  justify-self: end;
+}
+.sucursal-picker select {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 1rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  background: #fff;
+}
+.cart-button {
+  grid-column: 4;
   display: inline-flex;
   align-items: center;
   justify-content: center;

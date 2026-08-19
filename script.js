@@ -1,5 +1,6 @@
 const WHATSAPP_NUMBER = "5493794000000";
 const CART_KEY = "grandiet-cart";
+const SUCURSAL_KEY = "sucursalSeleccionada";
 
 // Estilo visual (color/icono) de cada categoria para las tarjetas de la home.
 // Es solo presentacion: los datos reales de categorias y productos vienen de Django (/api/).
@@ -19,6 +20,10 @@ const productImage = "assets/product-pattern.svg";
 // Se completan con fetch("/api/categorias/") y fetch("/api/productos/") antes de renderizar.
 let categories = [];
 let products = [];
+
+// Sucursal pública seleccionada por el visitante (independiente de login/panel).
+let sucursales = [];
+let sucursalActual = null;
 
 const slides = [
   { title: "Colageno hidrolizado", kicker: "20% OFF", description: "Promo destacada por tiempo limitado. Sumalo a tu pedido y confirma stock por WhatsApp.", category: "Suplementos", image: "assets/colageno-hidrolizado.jpg", bg: "#eef6e3", discount: "20%" },
@@ -61,6 +66,8 @@ const els = {
   homeSearchInput: document.querySelector("#homeSearchInput"),
   bestSellerGrid: document.querySelector("#bestSellerGrid"),
   offerGrid: document.querySelector("#offerGrid"),
+  sucursalSelectorWrap: document.querySelector("#sucursalSelectorWrap"),
+  sucursalSelect: document.querySelector("#sucursalSelect"),
 };
 
 function money(value) {
@@ -413,12 +420,61 @@ function bindEvents() {
   });
 
   els.sendOrder?.addEventListener("click", sendOrder);
+
+  els.sucursalSelect?.addEventListener("change", async (event) => {
+    sucursalActual = Number(event.target.value);
+    localStorage.setItem(SUCURSAL_KEY, String(sucursalActual));
+    try {
+      await loadCatalogData();
+    } catch (error) {
+      console.error("Error al cambiar de sucursal:", error);
+      showLoadError();
+      return;
+    }
+    applyUrlFilters();
+    renderCategories();
+    renderHomeProducts();
+    renderFilterButtons();
+    renderProducts();
+  });
+}
+
+async function resolverSucursalPublica() {
+  const res = await fetch("/api/sucursales/");
+  if (!res.ok) throw new Error("No se pudieron cargar las sucursales");
+  sucursales = await res.json();
+
+  const guardada = localStorage.getItem(SUCURSAL_KEY);
+  const guardadaValida = guardada && sucursales.some((s) => String(s.id) === guardada);
+
+  if (guardadaValida) {
+    sucursalActual = Number(guardada);
+    return;
+  }
+
+  // La sucursal guardada ya no existe o esta desactivada: se descarta y
+  // se vuelve a elegir automaticamente (primera sucursal activa disponible).
+  localStorage.removeItem(SUCURSAL_KEY);
+  sucursalActual = sucursales.length ? sucursales[0].id : null;
+  if (sucursalActual) localStorage.setItem(SUCURSAL_KEY, String(sucursalActual));
+}
+
+function renderSucursalSelector() {
+  if (!els.sucursalSelectorWrap || !els.sucursalSelect) return;
+  if (sucursales.length <= 1) {
+    els.sucursalSelectorWrap.hidden = true;
+    return;
+  }
+  els.sucursalSelectorWrap.hidden = false;
+  els.sucursalSelect.innerHTML = sucursales.map((s) => `
+    <option value="${s.id}" ${s.id === sucursalActual ? "selected" : ""}>${s.name}</option>
+  `).join("");
 }
 
 async function loadCatalogData() {
   const [productsRes, categoriesRes] = await Promise.all([
-    fetch("/api/productos/"),
-    fetch("/api/categorias/"),
+    fetch(`/api/productos/?sucursal=${sucursalActual}`),
+    fetch(`/api/categorias/?sucursal=${sucursalActual}`),
   ]);
   if (!productsRes.ok || !categoriesRes.ok) throw new Error("Respuesta invalida del servidor");
   products = await productsRes.json();
@@ -440,6 +496,9 @@ async function init() {
   bindEvents();
 
   try {
+    await resolverSucursalPublica();
+    if (!sucursalActual) throw new Error("No hay sucursales activas");
+    renderSucursalSelector();
     await loadCatalogData();
   } catch (error) {
     console.error("Error al cargar productos desde Django:", error);
