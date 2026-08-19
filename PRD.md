@@ -4,19 +4,20 @@
 
 Grandiet Corrientes es una tienda online de alimentos saludables ubicada en Corrientes, Argentina. El sitio permite a los clientes explorar el catálogo de productos, filtrarlos por categoría, agregarlos al carrito y hacer el pedido directamente por WhatsApp. El foco es velocidad, simplicidad y conversión directa sin necesidad de gateway de pagos.
 
-**Stack actual:** HTML5 + CSS3 + Vanilla JavaScript (ES6+) + Firebase (inicializado, no integrado) + localStorage para carrito.
+**Stack actual:** HTML5 + CSS3 + Vanilla JavaScript (ES6+) + Django (backend, ORM, panel de administración) + SQLite + localStorage para carrito.
+
+> **Actualización:** el proyecto usó Firebase (Auth + Firestore) durante una etapa anterior. Fue reemplazado completamente por Django: el catálogo público consume `/api/productos/` y `/api/categorias/` (Django ORM + SQLite), y la administración se hace desde el panel propio en `/panel/` (Django Authentication + CRUD). Firebase ya no forma parte del código del proyecto.
 
 ---
 
 ## Estado Actual
 
-- 28 productos en 7 categorías (hardcodeados en script.js)
+- 28 productos en 7 categorías (modelo `Producto`/`Categoria` de Django, servidos vía `/api/productos/` y `/api/categorias/`)
 - Carrito funcional con persistencia en localStorage
 - Integración con WhatsApp para hacer pedidos
 - Carousel de promociones en la home
 - Filtros por categoría, tag y búsqueda en el catálogo
-- Sin panel de administración
-- Sin integración real con Firebase/Firestore
+- Panel de administración propio en `/panel/` (login con Django Authentication, dashboard, CRUD de productos y categorías, activar/desactivar productos)
 - Sin validación de formularios
 - Sin documentación
 
@@ -31,12 +32,12 @@ Grandiet Corrientes es una tienda online de alimentos saludables ubicada en Corr
 - Limpiar magic numbers (número de WhatsApp, timer del carousel)
 
 ### 2. Gestión de Contenido (sin código)
-- **Panel de administración** para que el dueño del negocio pueda:
+- **Panel de administración** para que el dueño del negocio pueda: ✅ implementado en `/panel/`
   - Agregar / editar / eliminar productos
   - Cambiar precios y ofertas
   - Gestionar imágenes
-- Backend: Firestore como base de datos de productos
-- Autenticación simple (Firebase Auth) para el panel admin
+- Backend: Django ORM + SQLite como base de datos de productos
+- Autenticación con Django Authentication para el panel admin
 
 ### 3. Experiencia del Usuario (UX)
 - Página de detalle de producto (modal o página dedicada)
@@ -60,8 +61,8 @@ Grandiet Corrientes es una tienda online de alimentos saludables ubicada en Corr
 ## Prioridades (MoSCoW)
 
 ### Must Have (crítico)
-- [ ] Integrar productos con Firestore (eliminar hardcode)
-- [ ] Panel de administración básico (CRUD de productos)
+- [x] Integrar productos con Django ORM/SQLite (eliminar hardcode) — completado, reemplaza el plan original de Firestore
+- [x] Panel de administración básico (CRUD de productos) — completado en `/panel/` con Django
 - [ ] Validación del nombre del cliente antes de enviar pedido
 - [ ] Archivo de configuración del negocio (teléfono, horarios)
 - [ ] Modularizar el JavaScript
@@ -96,6 +97,5 @@ Grandiet Corrientes es una tienda online de alimentos saludables ubicada en Corr
 ## Notas Técnicas
 
 - El número de WhatsApp hardcodeado es `+54 9 379 400-0000` — debe moverse a config
-- Firebase está importado pero nunca se consulta Firestore
-- Las credenciales de Firebase están expuestas en `firebase.js` (riesgo bajo para un sitio de vitrina, pero mejora con reglas de seguridad en Firestore)
+- Firebase (Auth + Firestore) fue usado en una etapa anterior del proyecto y ya fue eliminado del repositorio (`firebase.js` y `admin.html` no existen más). El catálogo público y el panel de administración funcionan exclusivamente con Django.
 - No hay proceso de build — considerar Vite o simplemente módulos ES nativos
