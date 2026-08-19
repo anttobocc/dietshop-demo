@@ -21,3 +21,6 @@ db.sqlite3
 .idea/
 .DS_Store
 Thumbs.db
+
+# Configuración local de Claude Code
+.claude/
