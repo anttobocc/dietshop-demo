@@ -1,4 +1,4 @@
-const WHATSAPP_NUMBER = "5493794000000";
+const WHATSAPP_NUMBER = "543794757727";
 const CART_KEY = "grandiet-cart";
 const SUCURSAL_KEY = "sucursalSeleccionada";
 
