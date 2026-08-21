@@ -62,12 +62,11 @@ const els = {
   carouselDots: document.querySelector("#carouselDots"),
   prevSlide: document.querySelector("#prevSlide"),
   nextSlide: document.querySelector("#nextSlide"),
-  homeSearch: document.querySelector("#homeSearch"),
-  homeSearchInput: document.querySelector("#homeSearchInput"),
   bestSellerGrid: document.querySelector("#bestSellerGrid"),
   offerGrid: document.querySelector("#offerGrid"),
   sucursalTrigger: document.querySelector("#sucursalTrigger"),
   sucursalActualLabel: document.querySelector("#sucursalActualLabel"),
+  sucursalTriggerCaret: document.querySelector(".sucursal-trigger-caret"),
   sucursalModal: document.querySelector("#sucursalModal"),
   sucursalModalClose: document.querySelector("#sucursalModalClose"),
   sucursalList: document.querySelector("#sucursalList"),
@@ -411,12 +410,6 @@ function bindEvents() {
     renderProducts();
   });
 
-  els.homeSearch?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const query = els.homeSearchInput.value.trim();
-    window.location.href = `catalogo.html${query ? `?q=${encodeURIComponent(query)}` : ""}`;
-  });
-
   els.prevSlide?.addEventListener("click", () => {
     goToSlide(currentSlide - 1);
     resetSlideTimer();
@@ -481,9 +474,15 @@ function renderSucursalUI() {
   if (els.sucursalActualLabel) els.sucursalActualLabel.textContent = nombreSucursalActual();
 
   // Con 0 o 1 sucursal no tiene sentido abrir un modal a elegir: el boton
-  // sigue mostrando la ubicacion, pero queda deshabilitado (no oculto), asi
-  // el visitante siempre ve claramente donde esta comprando.
-  if (els.sucursalTrigger) els.sucursalTrigger.disabled = sucursales.length <= 1;
+  // queda deshabilitado y sin flechita, para que no parezca un selector -
+  // el visitante solo ve la direccion como texto informativo antes del
+  // carrito. Con 2+ sucursales se habilita y aparece la flechita.
+  const haySeleccionPosible = sucursales.length > 1;
+  if (els.sucursalTrigger) {
+    els.sucursalTrigger.disabled = !haySeleccionPosible;
+    els.sucursalTrigger.setAttribute("aria-haspopup", haySeleccionPosible ? "dialog" : "false");
+  }
+  if (els.sucursalTriggerCaret) els.sucursalTriggerCaret.hidden = !haySeleccionPosible;
 
   if (!els.sucursalList) return;
   els.sucursalList.innerHTML = sucursales.length
