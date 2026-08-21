@@ -81,6 +81,16 @@ function productImageFor(product) {
   return product.image || productImage;
 }
 
+// El carrito persiste en localStorage y puede contener una "foto" vieja del
+// producto (guardada en el momento en que se agrego al carrito). Si ese
+// producto sigue estando en el catalogo actual, usamos su imagen VIGENTE
+// (la misma fuente que usa el catalogo) en vez de la version cacheada, que
+// puede apuntar a una ruta que ya no existe.
+function cartItemImageSrc(cartProduct) {
+  const vigente = products.find((item) => item.id === cartProduct.id);
+  return productImageFor(vigente || cartProduct);
+}
+
 function badgeMarkup(product) {
   const badges = [];
   if (product.oldPrice) badges.push(`<span class="badge offer">${Math.round((1 - product.price / product.oldPrice) * 100)}% OFF</span>`);
@@ -246,7 +256,7 @@ function renderCart() {
   if (els.cartItems) {
     els.cartItems.innerHTML = items.map(({ product, quantity }) => `
       <div class="cart-item">
-        <img class="cart-thumb" src="${productImageFor(product)}" alt="${product.name}">
+        <img class="cart-thumb" src="${cartItemImageSrc(product)}" alt="${product.name}" loading="lazy">
         <div class="cart-item-info">
           <strong>${product.name}</strong>
           <small>${money(product.price)}</small>
@@ -461,7 +471,10 @@ async function resolverSucursalPublica() {
 
 function nombreSucursalActual() {
   const sucursal = sucursales.find((s) => s.id === sucursalActual);
-  return sucursal ? sucursal.name : "Sin sucursales disponibles";
+  if (!sucursal) return "Sin sucursales disponibles";
+  // Preferimos la direccion (mas util para el cliente para ubicarse) y
+  // caemos al nombre solo si la sucursal todavia no tiene direccion cargada.
+  return sucursal.address && sucursal.address.trim() ? sucursal.address : sucursal.name;
 }
 
 function renderSucursalUI() {
@@ -518,6 +531,7 @@ async function seleccionarSucursal(id) {
   renderHomeProducts();
   renderFilterButtons();
   renderProducts();
+  renderCart();
 }
 
 async function loadCatalogData() {
@@ -563,6 +577,11 @@ async function init() {
   renderHomeProducts();
   renderFilterButtons();
   renderProducts();
+  // Vuelve a pintar el carrito ahora que "products" tiene los datos vigentes
+  // (al arrancar, renderCart() ya se llamo una vez con products vacio, asi
+  // que un carrito con items viejos en localStorage seguia mostrando su
+  // imagen cacheada hasta este segundo render).
+  renderCart();
 }
 
 init();

@@ -13,27 +13,25 @@
 
     <header class="site-header">
       <nav class="nav" aria-label="Navegacion principal">
-        <a class="brand" href="index.html" aria-label="Grandiet Corrientes, inicio">
-          <span class="brand-mark" aria-hidden="true">G</span>
-          <span><strong>Grandiet</strong><small>Corrientes</small></span>
-        </a>
-
         <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-menu">
           <span class="sr-only">Abrir menu</span><span></span><span></span><span></span>
         </button>
+
+        <div class="brand-block">
+          <a class="brand" href="index.html" aria-label="Grandiet Corrientes, inicio">
+            <span class="brand-mark" aria-hidden="true">G</span>
+            <strong>Grandiet</strong>
+          </a>
+          <button type="button" class="sucursal-trigger" id="sucursalTrigger" aria-haspopup="dialog" aria-controls="sucursalModal">
+            <span id="sucursalActualLabel">Cargando…</span><span class="sucursal-trigger-caret" aria-hidden="true">▾</span>
+          </button>
+        </div>
 
         <div class="nav-links" id="primary-menu">
           <a href="index.html" aria-current="page">Inicio</a>
           <a href="catalogo.html">Catalogo</a>
           <a href="#categorias">Categorias</a>
           <a href="#ofertas">Ofertas</a>
-        </div>
-
-        <div class="sucursal-picker">
-          <button type="button" class="sucursal-trigger" id="sucursalTrigger" aria-haspopup="dialog" aria-controls="sucursalModal">
-            <span class="sucursal-trigger-label">Ubicación actual</span>
-            <span class="sucursal-trigger-value" id="sucursalActualLabel">Cargando…</span>
-          </button>
         </div>
 
         <button class="cart-button" type="button" id="openCart" aria-controls="cartDrawer" aria-expanded="false">

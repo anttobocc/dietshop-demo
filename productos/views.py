@@ -108,5 +108,8 @@ def api_categorias(request):
 def api_sucursales(request):
     """Sucursales activas, visibles públicamente (sin autenticación)."""
     sucursales = Sucursal.objects.filter(activo=True).order_by("nombre")
-    data = [{"id": sucursal.id, "name": sucursal.nombre} for sucursal in sucursales]
+    data = [
+        {"id": sucursal.id, "name": sucursal.nombre, "address": sucursal.direccion}
+        for sucursal in sucursales
+    ]
     return JsonResponse(data, safe=False)
