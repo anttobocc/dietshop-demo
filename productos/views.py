@@ -11,13 +11,17 @@ from .models import Categoria, InventarioSucursal
 def home(request):
     """Sirve index.html tal cual está en disco (bytes exactos, sin normalizar saltos de linea)."""
     html = (Path(settings.BASE_DIR) / "index.html").read_bytes()
-    return HttpResponse(html, content_type="text/html; charset=utf-8")
+    response = HttpResponse(html, content_type="text/html; charset=utf-8")
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def catalogo(request):
     """Sirve catalogo.html tal cual está en disco (bytes exactos, sin normalizar saltos de linea)."""
     html = (Path(settings.BASE_DIR) / "catalogo.html").read_bytes()
-    return HttpResponse(html, content_type="text/html; charset=utf-8")
+    response = HttpResponse(html, content_type="text/html; charset=utf-8")
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def _resolver_sucursal_publica(request):

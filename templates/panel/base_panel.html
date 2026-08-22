@@ -4,7 +4,7 @@
 {% block content %}
 <div class="panel-shell">
   <header class="panel-header">
-    <div class="panel-brand"><span class="mark">G</span><span>Grandiet <small>Admin</small></span></div>
+    <div class="panel-brand"><span class="mark">G</span><span>Grandiet <small>{{ user.username|capfirst }}</small></span></div>
     <nav class="panel-nav">
       <a class="panel-nav-link" href="{% url 'panel:dashboard' %}">Productos</a>
       <a class="panel-nav-link" href="{% url 'panel:categorias' %}">Categorías</a>

@@ -1,5 +1,6 @@
 {% extends "panel/base_panel.html" %}
 {% block title %}Usuarios | Panel Grandiet{% endblock %}
+{% block panel_main_class %}panel-main-wide{% endblock %}
 {% block panel_content %}
 <div class="toolbar">
   <h2>Usuarios ({{ usuarios|length }})</h2>
@@ -10,14 +11,13 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Usuario</th><th>Nombre</th><th>Email</th><th>Sucursales</th><th>Estado</th><th>Acciones</th><th>Activo</th></tr>
+          <tr><th>Usuario</th><th>Nombre</th><th>Sucursales</th><th>Estado</th><th>Acciones</th><th>Activo</th></tr>
         </thead>
         <tbody>
           {% for usuario in usuarios %}
           <tr>
             <td><strong>{{ usuario.username }}</strong></td>
             <td>{{ usuario.get_full_name|default:"—" }}</td>
-            <td>{{ usuario.email|default:"—" }}</td>
             <td>
               {% with sucursales=usuario.sucursales_autorizadas.all %}
                 {% for s in sucursales %}{{ s.nombre }}{% if not forloop.last %}, {% endif %}{% empty %}<em>Sin sucursal asignada</em>{% endfor %}
@@ -28,8 +28,9 @@
             </td>
             <td class="td-actions">
               <div class="td-actions-inner">
-                <a class="btn btn-secondary btn-sm" href="{% url 'panel:usuario_editar' usuario.pk %}">Editar</a>
-                <a class="btn btn-secondary btn-sm" href="{% url 'panel:usuario_password' usuario.pk %}">Contraseña</a>
+                <a class="btn btn-secondary btn-sm" href="#editar-usuario-{{ usuario.pk }}">Editar</a>
+                <a class="btn btn-secondary btn-sm" href="#password-usuario-{{ usuario.pk }}">Contraseña</a>
+                <a class="btn btn-danger btn-sm" href="#borrar-usuario-{{ usuario.pk }}">Eliminar</a>
               </div>
             </td>
             <td class="td-activo">
@@ -37,6 +38,7 @@
                 {% csrf_token %}
                 <input
                   type="checkbox"
+                  class="switch-input"
                   name="activo"
                   onchange="this.form.submit()"
                   {% if usuario.is_active %}checked{% endif %}
@@ -46,7 +48,7 @@
             </td>
           </tr>
           {% empty %}
-          <tr class="empty-row"><td colspan="7">No hay usuarios normales todavía.</td></tr>
+          <tr class="empty-row"><td colspan="6">No hay usuarios normales todavía.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -65,8 +67,6 @@
               <label>{{ field.label }}</label>
               {{ field }}
             </div>
-          {% elif field.name == "is_active" %}
-            <label class="tag-check">{{ field }} Activo</label>
           {% else %}
             <div class="field">
               <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
@@ -83,4 +83,40 @@
     </div>
   </div>
 </div>
+
+{% for usuario in usuarios %}
+<div id="editar-usuario-{{ usuario.pk }}" class="modal-overlay{% if usuario.modal_forzado_abierto %} is-open{% endif %}">
+  <div class="modal-box modal-box-form">
+    <h2>Editar {{ usuario.username }}</h2>
+    <form method="post" action="{% url 'panel:usuario_editar' usuario.pk %}" novalidate>
+      {% with form=usuario.edit_form cancelar_href="#" password_href=usuario.password_href %}
+        {% include "panel/_usuario_form_fields.html" %}
+      {% endwith %}
+    </form>
+  </div>
+</div>
+<div id="password-usuario-{{ usuario.pk }}" class="modal-overlay{% if usuario.password_modal_forzado_abierto %} is-open{% endif %}">
+  <div class="modal-box modal-box-form">
+    <h2>Cambiar contraseña de {{ usuario.username }}</h2>
+    <form method="post" action="{% url 'panel:usuario_password' usuario.pk %}" novalidate>
+      {% with form=usuario.password_form cancelar_href=usuario.editar_href %}
+        {% include "panel/_usuario_password_form_fields.html" %}
+      {% endwith %}
+    </form>
+  </div>
+</div>
+<div id="borrar-usuario-{{ usuario.pk }}" class="modal-overlay">
+  <div class="modal-box">
+    <h3>¿Eliminar "{{ usuario.username }}"?</h3>
+    <p>Esta acción no se puede deshacer.</p>
+    <div class="modal-actions">
+      <a class="btn btn-secondary" href="#">Cancelar</a>
+      <form method="post" action="{% url 'panel:usuario_eliminar' usuario.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Eliminar usuario</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}

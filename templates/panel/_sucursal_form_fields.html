@@ -1,0 +1,26 @@
+{% comment %}
+Campos del formulario de sucursal (nombre/direccion/activa/usuarios) +
+acciones. Se incluye tanto desde la pagina standalone (sucursal_form.html,
+fallback si el modal tiene errores de validacion) como desde el modal de
+edicion en sucursales.html. Espera en el contexto: `form` y `cancelar_href`.
+{% endcomment %}
+{% csrf_token %}
+{{ form.non_field_errors }}
+<div class="field">
+  <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+  {{ form.nombre }}
+  {{ form.nombre.errors }}
+</div>
+<div class="field">
+  <label for="{{ form.direccion.id_for_label }}">Dirección</label>
+  {{ form.direccion }}
+</div>
+{% if "activo" in form.fields %}<label class="tag-check">{{ form.activo }} Activa</label>{% endif %}
+<div class="field usuarios-checklist">
+  <label>Usuarios con acceso</label>
+  {{ form.usuarios }}
+</div>
+<div class="form-actions">
+  <a class="btn btn-secondary" href="{{ cancelar_href }}">Cancelar</a>
+  <button class="btn btn-primary" type="submit">Guardar</button>
+</div>

@@ -17,6 +17,22 @@ const DEFAULT_CATEGORY_STYLE = { color: "#eef1e6", icon: "bag" };
 
 const productImage = "assets/product-pattern.svg";
 
+// Cuantas tarjetas de #productGrid (catalogo.html) entran en el primer
+// viewport sin scroll (hasta 3 columnas en desktop x 2 filas): esas cargan
+// su imagen de inmediato en vez de esperar a que el navegador decida via
+// IntersectionObserver (loading="lazy"). Las demas (resto del catalogo,
+// fuera de pantalla) siguen con lazy loading normal.
+const CATALOG_EAGER_IMAGE_COUNT = 6;
+// De esas, solo las primeras (la fila que el usuario ve primero) piden
+// fetchpriority="high": no tiene sentido pedirle al navegador que priorice
+// mas imagenes de las que realmente estan en el borde superior.
+const CATALOG_HIGH_PRIORITY_IMAGE_COUNT = 3;
+// #bestSellerGrid en index.html es la primera seccion despues del carousel
+// (ya limitada a 4 productos): las 4 cargan de inmediato, pero solo las 2
+// primeras piden prioridad alta. #offerGrid es la seccion siguiente, fuera
+// del primer viewport, asi que mantiene lazy loading normal.
+const HOME_HIGH_PRIORITY_IMAGE_COUNT = 2;
+
 // Se completan con fetch("/api/categorias/") y fetch("/api/productos/") antes de renderizar.
 let categories = [];
 let products = [];
@@ -71,6 +87,17 @@ const els = {
   sucursalModalClose: document.querySelector("#sucursalModalClose"),
   sucursalList: document.querySelector("#sucursalList"),
 };
+
+// Se ejecuta ya (sincronico, antes del primer pintado) para que el menu
+// nunca llegue a mostrarse con el item activo equivocado mientras se
+// esperan las respuestas de /api/sucursales/ y /api/productos/. Solo
+// depende de la URL, no de datos del servidor, asi que no hace falta
+// esperar a init().
+resaltarNavActiva();
+// En el inicio, "Categorias"/"Ofertas" son anclas dentro de la misma
+// pagina: el navegador no recarga script.js al hacer clic, asi que el
+// estado activo se vuelve a calcular cada vez que cambia el hash.
+window.addEventListener("hashchange", resaltarNavActiva);
 
 function money(value) {
   return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(value);
@@ -139,7 +166,6 @@ function renderFilterButtons() {
 
   if (els.tagButtons) {
     const tags = [
-      { label: "Todos", value: "Todos" },
       { label: "Ofertas", value: "offer" },
       { label: "Mas vendidos", value: "best" },
       { label: "Nuevos", value: "new" },
@@ -160,11 +186,20 @@ function filteredProducts() {
   });
 }
 
-function renderProductCard(product) {
+// "eager": la tarjeta esta (o puede estar) en el primer viewport, asi que
+// la imagen arranca a descargarse ya, sin esperar a que el navegador la
+// detecte via IntersectionObserver. "priority": ademas es de las primeras
+// que el usuario ve, asi que se le pide al navegador que la baje antes que
+// al resto (fetchpriority="high"). Fuera de esos casos se mantiene
+// loading="lazy", igual que antes.
+function renderProductCard(product, { eager = false, priority = false } = {}) {
+  const imgLoadingAttrs = eager
+    ? (priority ? ' fetchpriority="high"' : "")
+    : ' loading="lazy"';
   return `
     <article class="product-card">
       ${badgeMarkup(product)}
-      <img src="${productImageFor(product)}" alt="${product.name}" loading="lazy">
+      <img src="${productImageFor(product)}" alt="${product.name}" decoding="async"${imgLoadingAttrs}>
       <div class="product-body">
         <div class="product-meta">
           <span class="tag">${product.category}</span>
@@ -186,16 +221,23 @@ function renderProducts() {
   const visibleProducts = filteredProducts();
   if (els.resultCount) els.resultCount.textContent = `${visibleProducts.length} producto${visibleProducts.length === 1 ? "" : "s"}`;
   els.productGrid.innerHTML = visibleProducts.length
-    ? visibleProducts.map(renderProductCard).join("")
+    ? visibleProducts.map((product, index) => renderProductCard(product, {
+        eager: index < CATALOG_EAGER_IMAGE_COUNT,
+        priority: index < CATALOG_HIGH_PRIORITY_IMAGE_COUNT,
+      })).join("")
     : `<p class="product-card product-body">No encontramos productos con ese criterio.</p>`;
 }
 
 function renderHomeProducts() {
   if (els.bestSellerGrid) {
-    els.bestSellerGrid.innerHTML = products.filter((product) => product.tags.includes("best")).slice(0, 4).map(renderProductCard).join("");
+    // Primera seccion despues del carousel: las 4 tarjetas ya estan (o casi)
+    // en el primer viewport.
+    els.bestSellerGrid.innerHTML = products.filter((product) => product.tags.includes("best")).slice(0, 4)
+      .map((product, index) => renderProductCard(product, { eager: true, priority: index < HOME_HIGH_PRIORITY_IMAGE_COUNT })).join("");
   }
   if (els.offerGrid) {
-    els.offerGrid.innerHTML = products.filter((product) => product.oldPrice).slice(0, 4).map(renderProductCard).join("");
+    // Seccion siguiente, fuera del primer viewport: se mantiene lazy loading.
+    els.offerGrid.innerHTML = products.filter((product) => product.oldPrice).slice(0, 4).map((product) => renderProductCard(product)).join("");
   }
 }
 
@@ -344,6 +386,49 @@ function applyUrlFilters() {
   if (query) searchTerm = query;
   if (tag) activeTag = tag;
   if (els.searchInput) els.searchInput.value = searchTerm;
+}
+
+// Subconjunto de applyUrlFilters() que NO depende de datos del servidor
+// ("category" si depende: se valida contra la lista de categorias real).
+// Se llama antes de esperar las APIs para que los botones de tags y el
+// buscador arranquen ya con su estado final, en vez de esperar sin motivo
+// a /api/productos/ y /api/categorias/ para pintar algo que no depende de esas respuestas.
+function applyUrlFiltersEarly() {
+  const params = new URLSearchParams(window.location.search);
+  const query = params.get("q");
+  const tag = params.get("tag");
+  if (query) searchTerm = query;
+  if (tag) activeTag = tag;
+  if (els.searchInput) els.searchInput.value = searchTerm;
+}
+
+// Unica fuente de verdad de que item del menu esta activo. Cada <a> del
+// menu trae un data-nav ("inicio" | "catalogo" | "categorias" | "ofertas")
+// que identifica su destino sin importar el href exacto (necesario porque,
+// por ejemplo, "Ofertas" en el inicio apunta a catalogo.html?tag=offer pero
+// tambien debe activarse si el hash actual es #ofertas).
+function navActivoActual() {
+  if (document.body.dataset.page === "catalog") {
+    const tag = new URLSearchParams(window.location.search).get("tag");
+    return tag === "offer" ? "ofertas" : "catalogo";
+  }
+  // Inicio: el estado depende del hash, no de query params.
+  if (window.location.hash === "#categorias") return "categorias";
+  if (window.location.hash === "#ofertas") return "ofertas";
+  return "inicio";
+}
+
+// Solo depende de la URL (path/hash/query), nunca de datos del servidor,
+// asi que se puede calcular ya al cargar el script -- sin esperar a
+// init() -- y el menu nunca llega a pintarse con el item activo
+// equivocado mientras se espera la respuesta de las APIs.
+function resaltarNavActiva() {
+  if (!els.navLinks) return;
+  const activo = navActivoActual();
+  els.navLinks.querySelectorAll("a[data-nav]").forEach((link) => {
+    if (link.dataset.nav === activo) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
+  });
 }
 
 function bindEvents() {
@@ -553,9 +638,17 @@ function showLoadError(texto) {
 }
 
 async function init() {
+  // "tag" y "q" no dependen del servidor: se aplican ya, antes de esperar
+  // las APIs, para que los botones de tag (fijos, no vienen de Django) y el
+  // buscador arranquen con su estado final en el primer render.
+  applyUrlFiltersEarly();
   renderCarousel();
   renderCart();
   bindEvents();
+  // Primer pintado de los filtros: los botones de tag ya quedan
+  // definitivos; los de categoria salen con placeholder ("Todos" solo,
+  // segun HTML/skeleton) hasta que llegue la lista real de categorias.
+  renderFilterButtons();
 
   try {
     await resolverSucursalPublica();
@@ -581,6 +674,15 @@ async function init() {
   // que un carrito con items viejos en localStorage seguia mostrando su
   // imagen cacheada hasta este segundo render).
   renderCart();
+  // Los grids arrancan con skeletons de altura similar a la real (ver
+  // index.html/catalogo.html), asi que el salto automatico del navegador a
+  // "#categorias" ya cae cerca de la posicion final. Esto es solo una
+  // correccion de seguridad por si la altura real difiere del skeleton, y
+  // usa behavior:"instant" para no generar un segundo salto animado encima
+  // del que ya hizo el navegador al cargar la pagina.
+  if (window.location.hash === "#categorias") {
+    document.querySelector("#categorias")?.scrollIntoView({ behavior: "instant", block: "start" });
+  }
 }
 
 init();

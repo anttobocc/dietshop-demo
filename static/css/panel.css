@@ -33,6 +33,23 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
 .field input:focus, .field select:focus, .field textarea:focus, .login-card input:focus { outline: none; border-color: #8DB33E; }
 .field small { color: #999; font-size: .75rem; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+/* Categoria + stock del inventario por sucursal (crear/editar producto):
+   la categoria ocupa el espacio disponible, el stock queda angosto (hasta
+   3 digitos comodos) en vez de repartirse 50/50 con la categoria.
+   Los labels van en fila 1 y los inputs en fila 2 (colocacion implicita
+   de grid, en ese orden en el HTML): el label de "Stock en <sucursal>"
+   puede envolver a varias lineas en una columna angosta sin correr el
+   input hacia abajo, porque el input vive en su propia fila compartida
+   con el de categoria -- eso es lo que garantiza que ambos inputs queden
+   exactamente a la misma altura, no que los labels no envuelvan. */
+.form-row-categoria-stock {
+  grid-template-columns: 1fr 90px;
+  row-gap: .35rem;
+  margin-bottom: .9rem;
+}
+.form-row-categoria-stock > label { font-size: .8rem; font-weight: 600; color: #555; }
+.form-row-categoria-stock .field { margin-bottom: 0; }
+.form-row-categoria-stock .field-stock input { text-align: center; }
 .tags-group { display: flex; gap: 1rem; flex-wrap: wrap; padding: .5rem 0 1rem; }
 .tag-check { display: flex; align-items: center; gap: .4rem; font-size: .875rem; cursor: pointer; }
 .tag-check input { width: 15px; height: 15px; accent-color: #8DB33E; }
@@ -61,6 +78,7 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
   font-size: .85rem; font-weight: 600; color: #444; background: #fff; cursor: pointer;
 }
 .sucursal-badge { font-size: .85rem; font-weight: 600; color: #4a7a10; background: #e8f0d5; padding: .3rem .7rem; border-radius: 20px; }
+.panel-greeting { margin: 0 0 1rem; color: #666; font-size: .95rem; }
 .panel-main { padding: 1.5rem; max-width: 1140px; margin: 0 auto; }
 /* Modificador opcional (solo lo usa el dashboard de productos, ver panel_main_class). */
 .panel-main-wide { max-width: 1600px; padding: 2rem 3rem; }
@@ -68,7 +86,13 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
 /* Toolbar y tarjetas */
 .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: .75rem; }
 .toolbar-right { display: flex; gap: .6rem; align-items: center; }
-.panel-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 1.75rem; max-width: 560px; margin-top: 1.5rem; }
+/* margin-top/auto centra el card horizontalmente cuando su max-width (560px)
+   es menor que el contenedor -- paginas standalone (categoria_form.html,
+   sucursal_form.html, usuario_form.html, usuario_password.html). Donde el
+   card vive dentro de un layout de dos columnas (.split-form/.products-form
+   mas abajo) esas reglas ya pisan max-width a "none", asi que el auto
+   margin no cambia nada ahi (el card sigue ocupando el 100% de su columna). */
+.panel-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.07); padding: 1.75rem; max-width: 560px; margin: 1.5rem auto 0; }
 .panel-card h2 { margin-top: 0; font-size: 1.1rem; }
 .datos-globales-solo-lectura {
   background: #f8f8f4; border: 1px dashed #ddd; border-radius: 8px;
@@ -110,22 +134,29 @@ body { margin: 0; font-family: system-ui, sans-serif; background: #f4f6f0; color
   .products-layout { grid-template-columns: 1fr; }
 }
 
-/* Tabla */
+/* Tabla: encabezado centrado respecto de su columna -- el th y el td
+   comparten el mismo text-align:center por default, asi que quedan
+   alineados sin tener que pisar caso por caso. Los anchos de columna no
+   cambian (el scroll horizontal, si hace falta, sigue igual). */
 .table-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 6px rgba(0,0,0,.07); overflow-x: auto; }
 table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: .875rem; }
-th { background: #f8f8f8; padding: .65rem 1rem; text-align: left; font-size: .75rem; color: #777; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #eee; white-space: nowrap; vertical-align: middle; }
-td { padding: .7rem 1rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+th { background: #f8f8f8; padding: .65rem 1rem; text-align: center; font-size: .75rem; color: #777; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #eee; white-space: nowrap; vertical-align: middle; }
+td { padding: .7rem 1rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; text-align: center; }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #fafff4; }
 /* La celda queda como table-cell normal (sin display:flex en el <td>, eso
    es lo que rompia la alineacion de la fila). El flex va en un wrapper interno. */
 .td-actions { white-space: nowrap; }
-.td-actions-inner { display: flex; align-items: center; gap: .4rem; }
+.td-actions-inner { display: flex; align-items: center; justify-content: center; gap: .4rem; }
 .td-activo { text-align: center; white-space: nowrap; }
 .activo-form { display: inline-flex; align-items: center; justify-content: center; margin: 0; }
-.activo-form input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: #8DB33E; cursor: pointer; }
-.img-thumb { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; display: block; }
-.no-img { width: 42px; height: 42px; border-radius: 6px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #bbb; }
+/* El tamaño/color del checkbox de esta celda ahora lo define .switch-input
+   (ver mas abajo) -- todos los checkboxes de .activo-form ya llevan esa
+   clase en el template. */
+/* Imagen (thumb) es display:block de ancho fijo: text-align:center del td
+   no la mueve por si sola, hace falta centrarla con margin auto. */
+.img-thumb { width: 42px; height: 42px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto; }
+.no-img { width: 42px; height: 42px; border-radius: 6px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: .65rem; color: #bbb; margin: 0 auto; }
 .badge { display: inline-block; padding: .12rem .45rem; border-radius: 20px; font-size: .7rem; font-weight: 700; margin: .1rem .05rem; }
 .badge-best { background: #e8f0d5; color: #4a7a10; }
 .badge-new { background: #dceef7; color: #1a6a8a; }
@@ -154,16 +185,81 @@ tr:hover td { background: #fafff4; }
   padding: 1rem;
   z-index: 200;
 }
-.modal-overlay:target { display: flex; }
+/* `:target` abre el modal via el fragmento de la URL (#borrar-3, etc).
+   `.is-open` abre el MISMO modal desde el servidor (sin cambiar el
+   fragmento): se usa cuando un POST invalido necesita volver a la lista
+   con ese modal puntual ya abierto y sus errores visibles -- ver
+   panel/views.py `_adjuntar_form_edicion`/`_adjuntar_form_password`. Ambos
+   selectores hacen exactamente lo mismo (mostrar el overlay centrado),
+   nunca conviven en conflicto porque .is-open solo lo agrega el server en
+   el primer render de una respuesta de error. */
+.modal-overlay:target, .modal-overlay.is-open { display: flex; }
 .modal-box {
   background: #fff;
   border-radius: 14px;
   padding: 1.75rem;
   width: 100%;
   max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 0 12px 48px rgba(0, 0, 0, .2);
 }
 .modal-box h3 { margin: 0 0 .5rem; font-size: 1.05rem; }
 .modal-box p { margin: 0; color: #666; font-size: .9rem; }
 .modal-actions { display: flex; gap: .6rem; justify-content: flex-end; margin-top: 1.5rem; }
 .modal-actions form { margin: 0; }
+
+/* Modales de edicion (categoria/sucursal/usuario): mismo sistema que el
+   modal de confirmacion de borrado de arriba (.modal-overlay/.modal-box,
+   CSS puro via :target/.is-open, sin JS), con un poco mas de ancho para
+   formularios con mas campos/checklists, y algo mas compactos (menos
+   margen entre campos) para que entren sin scroll interno en la mayoria
+   de las pantallas. */
+.modal-box-form { max-width: 480px; }
+.modal-box-form h2 { margin-top: 0; }
+.modal-box-form p { margin-bottom: 1rem; line-height: 1.4; }
+.modal-box-form .field { margin-bottom: .65rem; }
+.modal-box-form .form-actions { margin-top: 1.1rem; padding-top: .9rem; border-top: 1px solid #eee; }
+/* Fila de acciones de "Editar usuario": Cambiar contraseña a la izquierda,
+   Cancelar/Guardar agrupados a la derecha -- en vez del flex-end por
+   defecto de .form-actions. */
+.form-actions-split { justify-content: space-between; align-items: center; }
+.form-actions-right { display: flex; gap: .6rem; }
+
+/* Switch ON/OFF sobre el mismo <input type="checkbox">: sigue siendo un
+   checkbox real (mismo name, mismo "checked", mismo valor que recibe
+   Django), solo se le cambia la apariencia via CSS -- sin JS, sin cambiar
+   ningun formulario/vista. Se activa agregando class="switch-input" al
+   input (widgets en panel/forms.py para los campos de formulario; directo
+   en el <input> de las tablas para los toggles de fila). */
+input.switch-input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 40px;
+  min-width: 40px;
+  height: 22px;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  background: #ccc;
+  position: relative;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+input.switch-input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  transition: transform .15s ease;
+}
+input.switch-input:checked { background: #8DB33E; }
+input.switch-input:checked::before { transform: translateX(18px); }
+input.switch-input:focus-visible { outline: 2px solid #8DB33E; outline-offset: 2px; }
+input.switch-input:disabled { opacity: .5; cursor: not-allowed; }

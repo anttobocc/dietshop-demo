@@ -4,8 +4,11 @@ a la derecha de la lista, para no abandonar la pagina al editar.
 
 Combina dos formularios:
 - prod_form: datos GLOBALES del producto (comparten todas las sucursales).
-  Solo se muestra editable si puede_editar_global es True (superusuario, o
-  siempre al crear). Si es False, los datos se muestran de solo lectura.
+  Si puede_editar_global es True (superusuario, o siempre al crear) trae
+  todos los campos. Si es False trae solo precio/precio_anterior (ver
+  ProductoGlobalForm.solo_precio): cualquier usuario autorizado en la
+  sucursal puede modificar el precio; el resto (nombre, descripcion,
+  imagen, activo/destacado/nuevo/oferta) se muestra de solo lectura.
 - inv_form: datos del INVENTARIO en la sucursal activa (categoria/stock/
   disponible). Siempre editable por cualquier usuario autorizado.
 {% endcomment %}
@@ -15,13 +18,9 @@ Combina dos formularios:
   {% if modo == "editar" and not puede_editar_global %}
   <div class="datos-globales-solo-lectura">
     <p><strong>{{ producto.nombre }}</strong></p>
-    <p>
-      ${{ producto.precio }}
-      {% if producto.precio_anterior %}<span class="old-price">${{ producto.precio_anterior }}</span>{% endif %}
-    </p>
     {% if producto.descripcion %}<p>{{ producto.descripcion }}</p>{% endif %}
     {% if producto.imagen %}<img class="img-thumb" src="{{ producto.imagen.url }}" alt="">{% endif %}
-    <small>Estos datos son del producto y son compartidos por todas las sucursales. Solo un administrador puede modificarlos.</small>
+    <small>El nombre, la descripción y la imagen son del producto y son compartidos por todas las sucursales. Solo un administrador puede modificarlos.</small>
   </div>
   {% endif %}
 
@@ -31,22 +30,26 @@ Combina dos formularios:
 
     {% if prod_form %}
       {{ prod_form.non_field_errors }}
+      {% if puede_editar_global %}
       <div class="field">
         <label for="{{ prod_form.nombre.id_for_label }}">Nombre *</label>
         {{ prod_form.nombre }}
         {{ prod_form.nombre.errors }}
       </div>
+      {% endif %}
       <div class="form-row">
         <div class="field">
           <label for="{{ prod_form.precio.id_for_label }}">Precio (ARS) *</label>
           {{ prod_form.precio }}
           {{ prod_form.precio.errors }}
+          {% if not puede_editar_global %}<small>Compartido por todas las sucursales.</small>{% endif %}
         </div>
         <div class="field">
           <label for="{{ prod_form.precio_anterior.id_for_label }}">Precio anterior (oferta)</label>
           {{ prod_form.precio_anterior }}
         </div>
       </div>
+      {% if puede_editar_global %}
       <div class="field">
         <label for="{{ prod_form.descripcion.id_for_label }}">Descripción</label>
         {{ prod_form.descripcion }}
@@ -56,21 +59,21 @@ Combina dos formularios:
         {{ prod_form.imagen }}
       </div>
       <div class="tags-group">
-        <label class="tag-check">{{ prod_form.activo }} Activo (global)</label>
         <label class="tag-check">{{ prod_form.destacado }} Destacado</label>
         <label class="tag-check">{{ prod_form.nuevo }} Nuevo</label>
         <label class="tag-check">{{ prod_form.oferta }} Oferta</label>
       </div>
+      {% endif %}
     {% endif %}
 
-    <div class="form-row">
+    <div class="form-row form-row-categoria-stock">
+      <label for="{{ inv_form.categoria.id_for_label }}">Categoría en {{ sucursal_activa.nombre }} *</label>
+      <label for="{{ inv_form.stock.id_for_label }}">Stock en {{ sucursal_activa.nombre }}</label>
       <div class="field">
-        <label for="{{ inv_form.categoria.id_for_label }}">Categoría en {{ sucursal_activa.nombre }} *</label>
         {{ inv_form.categoria }}
         {{ inv_form.categoria.errors }}
       </div>
-      <div class="field">
-        <label for="{{ inv_form.stock.id_for_label }}">Stock en {{ sucursal_activa.nombre }}</label>
+      <div class="field field-stock">
         {{ inv_form.stock }}
         {{ inv_form.stock.errors }}
       </div>

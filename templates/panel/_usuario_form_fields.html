@@ -1,0 +1,39 @@
+{% comment %}
+Campos del formulario de usuario (username/nombre/apellido/sucursales) +
+fila de acciones (Cambiar contraseña / Cancelar / Guardar). No incluye
+email (no se usa en este sistema) ni el estado activo/inactivo: ese estado
+se cambia solamente desde el switch de la lista de usuarios.
+Se incluye tanto desde la pagina standalone (usuario_form.html, fallback
+para navegacion directa) como desde el modal de edicion en usuarios.html.
+Solo se usa para EDITAR (siempre hay una instancia): la creacion de
+usuarios tiene su propio formulario en usuarios.html, sin pasar por aca.
+Espera en el contexto: `form`, `cancelar_href`, `password_href`.
+{% endcomment %}
+{% csrf_token %}
+{{ form.non_field_errors }}
+<div class="field">
+  <label for="{{ form.username.id_for_label }}">Nombre de usuario *</label>
+  {{ form.username }}
+  {{ form.username.errors }}
+</div>
+<div class="form-row">
+  <div class="field">
+    <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+    {{ form.first_name }}
+  </div>
+  <div class="field">
+    <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+    {{ form.last_name }}
+  </div>
+</div>
+<div class="field usuarios-checklist">
+  <label>{{ form.sucursales.label }}</label>
+  {{ form.sucursales }}
+</div>
+<div class="form-actions form-actions-split">
+  <a class="btn btn-secondary btn-sm" href="{{ password_href }}">Cambiar contraseña</a>
+  <div class="form-actions-right">
+    <a class="btn btn-secondary" href="{{ cancelar_href }}">Cancelar</a>
+    <button class="btn btn-primary" type="submit">Guardar</button>
+  </div>
+</div>

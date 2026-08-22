@@ -10,18 +10,31 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Acciones</th></tr>
+          <tr><th>Nombre</th><th>Descripción</th><th>Activa</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           {% for categoria in categorias %}
           <tr>
             <td><strong>{{ categoria.nombre }}</strong></td>
             <td>{{ categoria.descripcion }}</td>
-            <td>
-              {% if categoria.activo %}<span class="badge badge-best">activa</span>{% else %}<span class="badge badge-off">inactiva</span>{% endif %}
+            <td class="td-activo">
+              <form method="post" action="{% url 'panel:categoria_toggle_activo' categoria.pk %}" class="activo-form">
+                {% csrf_token %}
+                <input
+                  type="checkbox"
+                  class="switch-input"
+                  name="activo"
+                  onchange="this.form.submit()"
+                  {% if categoria.activo %}checked{% endif %}
+                  title="Categoría activa"
+                  aria-label="Activar o desactivar {{ categoria.nombre }}">
+              </form>
             </td>
             <td class="td-actions">
-              <a class="btn btn-secondary btn-sm" href="{% url 'panel:categoria_editar' categoria.pk %}">Editar</a>
+              <div class="td-actions-inner">
+                <a class="btn btn-secondary btn-sm" href="#editar-categoria-{{ categoria.pk }}">Editar</a>
+                <a class="btn btn-danger btn-sm" href="#borrar-categoria-{{ categoria.pk }}">Eliminar</a>
+              </div>
             </td>
           </tr>
           {% empty %}
@@ -47,7 +60,6 @@
           <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
           {{ form.descripcion }}
         </div>
-        <label class="tag-check">{{ form.activo }} Activa</label>
         <div class="form-actions">
           <button class="btn btn-primary" type="submit">Crear categoría</button>
         </div>
@@ -55,4 +67,30 @@
     </div>
   </div>
 </div>
+
+{% for categoria in categorias %}
+<div id="editar-categoria-{{ categoria.pk }}" class="modal-overlay{% if categoria.modal_forzado_abierto %} is-open{% endif %}">
+  <div class="modal-box modal-box-form">
+    <h2>Editar categoría</h2>
+    <form method="post" action="{% url 'panel:categoria_editar' categoria.pk %}">
+      {% with form=categoria.edit_form cancelar_href="#" %}
+        {% include "panel/_categoria_form_fields.html" %}
+      {% endwith %}
+    </form>
+  </div>
+</div>
+<div id="borrar-categoria-{{ categoria.pk }}" class="modal-overlay">
+  <div class="modal-box">
+    <h3>¿Eliminar "{{ categoria.nombre }}"?</h3>
+    <p>Esta acción no se puede deshacer. Si la categoría todavía tiene productos cargados, no se va a poder eliminar.</p>
+    <div class="modal-actions">
+      <a class="btn btn-secondary" href="#">Cancelar</a>
+      <form method="post" action="{% url 'panel:categoria_eliminar' categoria.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Eliminar categoría</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}

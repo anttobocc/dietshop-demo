@@ -1,5 +1,6 @@
 {% extends "panel/base_panel.html" %}
 {% block title %}Sucursales | Panel Grandiet{% endblock %}
+{% block panel_main_class %}panel-main-wide{% endblock %}
 {% block panel_content %}
 <div class="toolbar">
   <h2>Sucursales ({{ sucursales|length }})</h2>
@@ -25,7 +26,9 @@
             </td>
             <td class="td-actions">
               <div class="td-actions-inner">
-                <a class="btn btn-secondary btn-sm" href="{% url 'panel:sucursal_editar' sucursal.pk %}">Editar</a>
+                <a class="btn btn-secondary btn-sm" href="#editar-sucursal-{{ sucursal.pk }}">Editar</a>
+                <a class="btn btn-secondary btn-sm" href="#inicializar-sucursal-{{ sucursal.pk }}">Inicializar productos</a>
+                <a class="btn btn-danger btn-sm" href="#borrar-sucursal-{{ sucursal.pk }}">Eliminar</a>
               </div>
             </td>
             <td class="td-activo">
@@ -33,6 +36,7 @@
                 {% csrf_token %}
                 <input
                   type="checkbox"
+                  class="switch-input"
                   name="activo"
                   onchange="this.form.submit()"
                   {% if sucursal.activo %}checked{% endif %}
@@ -64,7 +68,7 @@
           <label for="{{ form.direccion.id_for_label }}">Dirección</label>
           {{ form.direccion }}
         </div>
-        <label class="tag-check">{{ form.activo }} Activa</label>
+        {% if "activo" in form.fields %}<label class="tag-check">{{ form.activo }} Activa</label>{% endif %}
         <div class="field usuarios-checklist">
           <label>Usuarios con acceso</label>
           {{ form.usuarios }}
@@ -76,4 +80,56 @@
     </div>
   </div>
 </div>
+
+{% for sucursal in sucursales %}
+<div id="editar-sucursal-{{ sucursal.pk }}" class="modal-overlay{% if sucursal.modal_forzado_abierto %} is-open{% endif %}">
+  <div class="modal-box modal-box-form">
+    <h2>Editar sucursal</h2>
+    <form method="post" action="{% url 'panel:sucursal_editar' sucursal.pk %}">
+      {% with form=sucursal.edit_form cancelar_href="#" %}
+        {% include "panel/_sucursal_form_fields.html" %}
+      {% endwith %}
+    </form>
+  </div>
+</div>
+<div id="inicializar-sucursal-{{ sucursal.pk }}" class="modal-overlay">
+  <div class="modal-box modal-box-form">
+    <h2>Inicializar sucursal</h2>
+    <p>Destino: <strong>{{ sucursal.nombre }}</strong></p>
+    {% if sucursal.tiene_inventario %}
+      <p>Esta sucursal ya tiene productos cargados. Inicializarla podría crear registros duplicados o modificar su configuración, así que esta acción no está disponible.</p>
+      <div class="form-actions">
+        <a class="btn btn-secondary" href="#">Cerrar</a>
+      </div>
+    {% else %}
+      <p>Esta sucursal no tiene productos cargados. Elegí una sucursal existente para copiar su catálogo: se crean las categorías y el inventario para "{{ sucursal.nombre }}", reutilizando los mismos productos globales, con stock inicial en 0.</p>
+      <form method="post" action="{% url 'panel:sucursal_inicializar' sucursal.pk %}">
+        {% csrf_token %}
+        <div class="field">
+          <label for="{{ sucursal.inicializar_form.origen.id_for_label }}">{{ sucursal.inicializar_form.origen.label }}</label>
+          {{ sucursal.inicializar_form.origen }}
+          {{ sucursal.inicializar_form.origen.errors }}
+        </div>
+        <div class="form-actions">
+          <a class="btn btn-secondary" href="#">Cancelar</a>
+          <button class="btn btn-primary" type="submit">Inicializar sucursal</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+<div id="borrar-sucursal-{{ sucursal.pk }}" class="modal-overlay">
+  <div class="modal-box">
+    <h3>¿Eliminar "{{ sucursal.nombre }}"?</h3>
+    <p>Esta acción no se puede deshacer. Se van a eliminar también sus categorías y su inventario. Los productos globales que también estén en otras sucursales no se ven afectados.</p>
+    <div class="modal-actions">
+      <a class="btn btn-secondary" href="#">Cancelar</a>
+      <form method="post" action="{% url 'panel:sucursal_eliminar' sucursal.pk %}">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Eliminar sucursal</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}

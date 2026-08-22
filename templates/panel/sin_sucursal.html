@@ -1,8 +1,20 @@
 {% extends "panel/base_panel.html" %}
-{% block title %}Sin sucursal asignada | Panel Grandiet{% endblock %}
+{% block title %}{% if sucursales_disponibles %}Elegí una sucursal{% else %}Sin sucursal asignada{% endif %} | Panel Grandiet{% endblock %}
 {% block panel_content %}
 <div class="panel-card">
-  <h2>No tenés ninguna sucursal asignada</h2>
-  <p>Todavía no tenés acceso a ninguna sucursal activa. Pedile a un administrador que te asigne una para poder trabajar en el panel.</p>
+  {% if sucursales_disponibles %}
+    <h2>Elegí con qué sucursal querés trabajar</h2>
+    <p>Tenés acceso a más de una sucursal. Seleccioná una para continuar; podés cambiarla después desde el selector del encabezado.</p>
+    {% for s in sucursales_disponibles %}
+      <form method="post" action="{% url 'panel:sucursal_activa' %}">
+        {% csrf_token %}
+        <input type="hidden" name="sucursal_id" value="{{ s.id }}">
+        <button class="btn btn-primary btn-full" type="submit">{{ s.nombre }}</button>
+      </form>
+    {% endfor %}
+  {% else %}
+    <h2>No tenés ninguna sucursal asignada</h2>
+    <p>Todavía no tenés acceso a ninguna sucursal activa. Pedile a un administrador que te asigne una para poder trabajar en el panel.</p>
+  {% endif %}
 </div>
 {% endblock %}

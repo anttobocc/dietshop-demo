@@ -2,6 +2,7 @@
 {% block title %}Productos | Panel Grandiet{% endblock %}
 {% block panel_main_class %}panel-main-wide{% endblock %}
 {% block panel_content %}
+<p class="panel-greeting">¡Hola, {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username|capfirst }}{% endif %}!</p>
 <div class="toolbar">
   <h2>Productos en {{ sucursal_activa.nombre }} ({{ inventarios|length }})</h2>
   <div class="toolbar-right">
@@ -57,6 +58,7 @@
                 {% csrf_token %}
                 <input
                   type="checkbox"
+                  class="switch-input"
                   name="activo"
                   onchange="this.form.submit()"
                   {% if inv.disponible %}checked{% endif %}

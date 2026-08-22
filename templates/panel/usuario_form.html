@@ -3,30 +3,10 @@
 {% block panel_content %}
 <div class="panel-card">
   <h2>Editar {{ usuario.username }}</h2>
+  {% url 'panel:usuarios' as cancelar_href %}
+  {% url 'panel:usuario_password' usuario.pk as password_href %}
   <form method="post" novalidate>
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    {% for field in form %}
-      {% if field.name == "sucursales" %}
-        <div class="field usuarios-checklist">
-          <label>{{ field.label }}</label>
-          {{ field }}
-        </div>
-      {% elif field.name == "is_active" %}
-        <label class="tag-check">{{ field }} Activo</label>
-      {% else %}
-        <div class="field">
-          <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-          {{ field }}
-          {{ field.errors }}
-        </div>
-      {% endif %}
-    {% endfor %}
-    <div class="form-actions">
-      <a class="btn btn-secondary" href="{% url 'panel:usuarios' %}">Cancelar</a>
-      <button class="btn btn-primary" type="submit">Guardar</button>
-    </div>
+    {% include "panel/_usuario_form_fields.html" %}
   </form>
-  <p class="usuario-password-link"><a class="btn btn-secondary btn-sm" href="{% url 'panel:usuario_password' usuario.pk %}">Cambiar contraseña</a></p>
 </div>
 {% endblock %}

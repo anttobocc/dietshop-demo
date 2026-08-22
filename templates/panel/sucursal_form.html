@@ -3,27 +3,9 @@
 {% block panel_content %}
 <div class="panel-card">
   <h2>Editar sucursal</h2>
+  {% url 'panel:sucursales' as cancelar_href %}
   <form method="post">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    <div class="field">
-      <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
-      {{ form.nombre }}
-      {{ form.nombre.errors }}
-    </div>
-    <div class="field">
-      <label for="{{ form.direccion.id_for_label }}">Dirección</label>
-      {{ form.direccion }}
-    </div>
-    <label class="tag-check">{{ form.activo }} Activa</label>
-    <div class="field usuarios-checklist">
-      <label>Usuarios con acceso</label>
-      {{ form.usuarios }}
-    </div>
-    <div class="form-actions">
-      <a class="btn btn-secondary" href="{% url 'panel:sucursales' %}">Cancelar</a>
-      <button class="btn btn-primary" type="submit">Guardar</button>
-    </div>
+    {% include "panel/_sucursal_form_fields.html" %}
   </form>
 </div>
 {% endblock %}

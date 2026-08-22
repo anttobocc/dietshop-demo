@@ -23,11 +23,24 @@
         </a>
 
         <div class="nav-links" id="primary-menu">
-          <a href="index.html" aria-current="page">Inicio</a>
-          <a href="catalogo.html">Catalogo</a>
-          <a href="#categorias">Categorias</a>
-          <a href="#ofertas">Ofertas</a>
+          <a href="index.html" data-nav="inicio">Inicio</a>
+          <a href="catalogo.html" data-nav="catalogo">Catalogo</a>
+          <a href="#categorias" data-nav="categorias">Categorias</a>
+          <a href="catalogo.html?tag=offer" data-nav="ofertas">Ofertas</a>
         </div>
+        <script>
+          // Ver el comentario equivalente en catalogo.html: fija el item de
+          // menu activo antes de que el header llegue a pintarse.
+          (function () {
+            var nav = document.getElementById("primary-menu");
+            var hash = window.location.hash;
+            var activo = hash === "#categorias" ? "categorias" : hash === "#ofertas" ? "ofertas" : "inicio";
+            nav.querySelectorAll("a[data-nav]").forEach(function (link) {
+              if (link.dataset.nav === activo) link.setAttribute("aria-current", "page");
+              else link.removeAttribute("aria-current");
+            });
+          })();
+        </script>
 
         <button type="button" class="sucursal-trigger" id="sucursalTrigger" aria-haspopup="dialog" aria-controls="sucursalModal">
           <span id="sucursalActualLabel">Cargando…</span><span class="sucursal-trigger-caret" aria-hidden="true" hidden>▾</span>
@@ -44,20 +57,41 @@
         <div class="carousel" id="promoCarousel">
           <div class="carousel-track" id="carouselTrack"></div>
           <div class="carousel-controls">
-            <button type="button" class="carousel-btn" id="prevSlide" aria-label="Promocion anterior">‹</button>
+            <button type="button" class="carousel-btn" id="prevSlide" aria-label="Promocion anterior"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div class="carousel-dots" id="carouselDots" aria-label="Seleccionar promocion"></div>
-            <button type="button" class="carousel-btn" id="nextSlide" aria-label="Promocion siguiente">›</button>
+            <button type="button" class="carousel-btn" id="nextSlide" aria-label="Promocion siguiente"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
           </div>
         </div>
       </section>
 
-      <section class="section-pad product-strip" aria-labelledby="vendidos-title">
+      <section class="section-pad product-strip favorites" aria-labelledby="vendidos-title">
         <div class="section-heading compact-heading">
           <p class="eyebrow">Favoritos</p>
           <h2 id="vendidos-title">Mas vendidos</h2>
           <a class="text-link" href="catalogo.html?tag=best">Ver todos</a>
         </div>
-        <div class="product-row" id="bestSellerGrid"></div>
+        <div class="product-row" id="bestSellerGrid">
+          <!-- Skeleton: reemplazado por renderHomeProducts() al llegar /api/productos/. Reserva la altura real para que el footer no salte durante la carga. -->
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+        </div>
+      </section>
+
+      <section class="section-pad product-strip" id="ofertas" aria-labelledby="ofertas-title">
+        <div class="section-heading compact-heading">
+          <p class="eyebrow">Ofertas</p>
+          <h2 id="ofertas-title">Productos en oferta</h2>
+          <a class="text-link" href="catalogo.html?tag=offer">Ver ofertas</a>
+        </div>
+        <div class="product-row" id="offerGrid">
+          <!-- Skeleton: reemplazado por renderHomeProducts() al llegar /api/productos/. -->
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+          <article class="product-card skeleton-card" aria-hidden="true"><div class="skeleton-image"></div><div class="product-body"><div class="product-meta"><span class="skeleton-chip"></span><span class="skeleton-chip"></span></div><div class="skeleton-line" style="width:75%"></div><p></p><button class="add-btn" type="button" disabled tabindex="-1"></button></div></article>
+        </div>
       </section>
 
       <section class="section-pad categories" id="categorias" aria-labelledby="categorias-title">
@@ -65,16 +99,13 @@
           <p class="eyebrow">Categorias</p>
           <h2 id="categorias-title">Compra por rubro</h2>
         </div>
-        <div class="category-grid" id="categoryCards"></div>
-      </section>
-
-      <section class="section-pad product-strip offers" id="ofertas" aria-labelledby="ofertas-title">
-        <div class="section-heading compact-heading">
-          <p class="eyebrow">Promos</p>
-          <h2 id="ofertas-title">Productos en oferta</h2>
-          <a class="text-link" href="catalogo.html?tag=offer">Ver ofertas</a>
+        <div class="category-grid" id="categoryCards">
+          <!-- Skeleton: reemplazado por renderCategories() al llegar /api/categorias/. -->
+          <div class="category-card skeleton-card" aria-hidden="true"><span></span><div class="skeleton-line" style="width:60%"></div><div class="skeleton-line" style="width:85%;height:14px;margin-top:.3rem"></div></div>
+          <div class="category-card skeleton-card" aria-hidden="true"><span></span><div class="skeleton-line" style="width:60%"></div><div class="skeleton-line" style="width:85%;height:14px;margin-top:.3rem"></div></div>
+          <div class="category-card skeleton-card" aria-hidden="true"><span></span><div class="skeleton-line" style="width:60%"></div><div class="skeleton-line" style="width:85%;height:14px;margin-top:.3rem"></div></div>
+          <div class="category-card skeleton-card" aria-hidden="true"><span></span><div class="skeleton-line" style="width:60%"></div><div class="skeleton-line" style="width:85%;height:14px;margin-top:.3rem"></div></div>
         </div>
-        <div class="product-row" id="offerGrid"></div>
       </section>
     </main>
 
@@ -83,7 +114,7 @@
       <div class="drawer-panel" role="dialog" aria-modal="true">
         <div class="cart-header">
           <div><p class="eyebrow">Tu pedido</p><h2 id="cartTitle">Carrito</h2></div>
-          <button class="icon-button" type="button" data-close-cart aria-label="Cerrar carrito">×</button>
+          <button class="icon-button" type="button" data-close-cart aria-label="Cerrar carrito"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
         </div>
         <div class="cart-items" id="cartItems" aria-live="polite"></div>
         <div class="cart-empty" id="cartEmpty">
@@ -107,7 +138,7 @@
             <p class="eyebrow">Ubicación actual</p>
             <h2 id="sucursalModalTitle">Elegí tu sucursal</h2>
           </div>
-          <button type="button" class="icon-button" id="sucursalModalClose" aria-label="Cerrar">×</button>
+          <button type="button" class="icon-button" id="sucursalModalClose" aria-label="Cerrar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
         </div>
         <p>Seleccioná la sucursal donde querés comprar. Vamos a mostrarte su catálogo y stock disponible.</p>
         <ul class="sucursal-list" id="sucursalList"></ul>

@@ -1,0 +1,23 @@
+{% comment %}
+Campos del formulario de categoria (nombre/descripcion) + acciones. El
+estado (activa/inactiva) no forma parte de este formulario: se cambia
+solamente desde el switch de la lista de categorias.
+Se incluye tanto desde la pagina standalone (categoria_form.html, fallback
+si el modal tiene errores de validacion) como desde el modal de edicion en
+categorias.html. Espera en el contexto: `form` y `cancelar_href`.
+{% endcomment %}
+{% csrf_token %}
+{{ form.non_field_errors }}
+<div class="field">
+  <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+  {{ form.nombre }}
+  {{ form.nombre.errors }}
+</div>
+<div class="field">
+  <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+  {{ form.descripcion }}
+</div>
+<div class="form-actions">
+  <a class="btn btn-secondary" href="{{ cancelar_href }}">Cancelar</a>
+  <button class="btn btn-primary" type="submit">Guardar</button>
+</div>

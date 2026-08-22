@@ -47,7 +47,7 @@ button { cursor: pointer; }
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-.section-pad { padding: 3.75rem 1rem; }
+.section-pad { padding: 3.75rem 1rem; scroll-margin-top: var(--header-height); }
 
 .site-header {
   position: sticky;
@@ -107,6 +107,7 @@ button { cursor: pointer; }
   align-items: center;
   gap: .2rem;
   max-width: 150px;
+  margin-right: 1rem;
   border: 0;
   padding: 0;
   background: transparent;
@@ -155,8 +156,21 @@ button { cursor: pointer; }
   border-radius: 999px;
   color: var(--muted);
   font-weight: 850;
+  transition: color .15s ease;
 }
-.nav-links a:hover, .nav-links a:focus-visible, .nav-links a[aria-current="page"] {
+/* Hover/focus son solo una pista de interaccion, nunca deben poder
+   confundirse con [aria-current="page"] (el pill con fondo): si comparten
+   el mismo fondo, el enlace recien clickeado parece "activo" mientras el
+   navegador todavia muestra la pagina vieja, durante la navegacion. */
+.nav-links a:hover {
+  color: var(--green-dark);
+}
+.nav-links a:focus-visible {
+  color: var(--green-dark);
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+.nav-links a[aria-current="page"] {
   color: var(--green-dark);
   background: var(--soft-green);
 }
@@ -316,14 +330,17 @@ h3 { margin-bottom: .4rem; }
   pointer-events: none;
 }
 .carousel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 42px;
   height: 42px;
+  padding: 0;
   border: 0;
   border-radius: 999px;
   color: var(--green-dark);
   background: rgba(255,255,255,.88);
   box-shadow: 0 8px 20px rgba(45, 78, 27, .12);
-  font-size: 1.6rem;
   pointer-events: auto;
 }
 .carousel-dots {
@@ -370,7 +387,7 @@ h3 { margin-bottom: .4rem; }
 }
 .compact-heading .eyebrow { grid-column: 1 / -1; margin-bottom: -.7rem; }
 .compact-heading h2 { margin-bottom: 0; }
-.categories, .offers { background: var(--gray); }
+.categories, .favorites { background: var(--gray); }
 .category-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -406,11 +423,9 @@ h3 { margin-bottom: .4rem; }
   background: var(--category-color, var(--soft-green));
   opacity: .8;
 }
-.category-card span, .icon-button {
+.category-card span {
   display: grid;
   place-items: center;
-}
-.category-card span {
   position: relative;
   width: 48px;
   height: 48px;
@@ -445,7 +460,14 @@ h3 { margin-bottom: .4rem; }
   width: 100%;
   aspect-ratio: 4 / 3;
   object-fit: cover;
-  background: var(--soft-green);
+  /* Gris neutro (no el verde del skeleton): mientras la foto todavia no
+     bajo, esto tiene que leerse como "la tarjeta ya esta, falta la imagen",
+     no como si el skeleton siguiera ahi. Sin opacity/transition: en este
+     proyecto la foto tarda unos pocos ms en llegar (bien por debajo de un
+     fade perceptible), asi que un fade de 150ms terminaba siendo mas largo
+     que la propia carga -- y con opacity:0 de por medio, tapaba este mismo
+     gris mientras tanto, dejando un hueco blanco en vez del placeholder. */
+  background: var(--gray);
 }
 .badges {
   position: absolute;
@@ -522,6 +544,35 @@ h3 { margin-bottom: .4rem; }
 }
 .add-btn:hover { background: var(--green-dark); }
 
+/* Skeletons: reservan, desde el HTML inicial, una altura similar a la de las
+   tarjetas/categorias reales mientras se esperan /api/productos/,
+   /api/categorias/ y /api/sucursales/. Reutilizan el box model de
+   .product-card/.category-card (imagen 4:3, .product-body p con
+   min-height:56px, .add-btn con min-height:44px) para no inventar un alto
+   arbitrario. Bloques de color fijo, sin animacion. */
+.skeleton-card { pointer-events: none; }
+.skeleton-card .add-btn { opacity: .35; }
+.skeleton-card .product-body p { background: var(--gray); border-radius: 4px; }
+.skeleton-image {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  background: var(--soft-green);
+}
+.skeleton-chip {
+  display: inline-block;
+  width: 60px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--gray);
+}
+.skeleton-line {
+  display: block;
+  height: 16px;
+  margin: .6rem 0 .5rem;
+  border-radius: 4px;
+  background: var(--gray);
+}
+
 .catalog-section { max-width: 1280px; margin: 0 auto; padding-top: 1.5rem; }
 .catalog-heading {
   display: grid;
@@ -548,7 +599,7 @@ h3 { margin-bottom: .4rem; }
 }
 .filter-group { margin-top: 1.15rem; }
 .filter-label { display: block; margin-bottom: .6rem; font-weight: 850; }
-.filter-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+.filter-buttons { display: flex; flex-wrap: wrap; gap: .5rem; min-height: 2.75rem; }
 .filter-btn, .clear-filters {
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -612,14 +663,16 @@ h3 { margin-bottom: .4rem; }
 }
 .cart-header h2, .cart-header .eyebrow { margin-bottom: 0; }
 .icon-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 42px;
   height: 42px;
+  padding: 0;
   border: 1px solid var(--line);
   border-radius: 14px;
   color: var(--green-dark);
   background: #fff;
-  font-size: 1.45rem;
-  font-weight: 900;
 }
 .cart-items { overflow: auto; padding: 1rem; }
 .cart-empty {
